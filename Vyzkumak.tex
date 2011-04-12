@@ -1,0 +1,297 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% BAKALÁŘSKÁ PRÁCE			%
+% JAKUB FLAŠKA				%
+% Šablona převzata ze stránek KSE	%
+% (C) FJFI ČVUT v Praze			%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Typ dokumentu
+\documentclass[a4paper,12pt]{report}	% report - jednostranný tisk
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Pouzite balíčky
+
+% Kódování a zpracování ČJ
+\usepackage[czech]{babel}	% cestina
+\usepackage[T1]{fontenc}	% balicek fontu
+\usepackage[utf8]{inputenc}	% cestina
+% Vytvoření indexu a seznamu použité literatury
+\usepackage{index}		% vytvoření obsahu
+\usepackage[pdftex]{hyperref}	% vygeneruje rejstřík při použití pdflatex
+\usepackage{cite}		% vytvoření literatury
+\usepackage{multibib}		% více zdrojů literatury
+% Práce s obrázky
+\usepackage{graphicx}		% obrázky
+\usepackage{subfig}		% více obrázků v políčku
+% Ostatní
+\usepackage{listings}		% vkladani zdrojoveho kodu
+\usepackage[usenames]{color}	% použití barevného textu
+\usepackage{url}		% zpracování www adresy
+\usepackage{verbatim}		% moznost viceradkovych kommentaru prikazem \begin{comment}
+\usepackage{array}		%
+\usepackage{caption}		% Popisky obrázků jiným písmem, než zbytek textu.
+\usepackage{amsmath}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Formát textu
+
+\oddsidemargin=10mm		% levý okraj
+\topmargin=-15mm		% horní okraj
+\textwidth=150mm
+\textheight=240mm
+\pagenumbering{arabic}
+\pagestyle{plain}
+
+%\parindent=0pt			% odsazení prvního řádku
+\parskip=7pt			% mezera mezi odstavci
+\frenchspacing			% typografická pravidla
+
+\renewcommand{\rmdefault}{phv}	% Arial
+\renewcommand{\sfdefault}{phv}	% Arial
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Nastavení balíčků
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Formátováni zdrojů - cite, Multibib
+%Bibtex
+\bibliographystyle{plain}		% styl primarnich zdroju
+
+\newcites{sec}{Obrazový materiál}	% sekundarni zdroje
+\bibliographystylesec{plain}		% styl sekundarnich zdroju
+
+\newcites{url}{Odkazy}			% odkazy
+\bibliographystyleurl{plain}		% styl odkazu
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Vytvoření indexu pro rejstřík a citace - index
+%index
+\newindex{default}{idx}{ind}{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\DeclareFontShape{OT1}{cmtt}{bx}{n}{cmttb10}{}	% Definování fontu pro bold type-writer.
+
+% Caption
+\captionsetup{%font=small,		% Formát popisků.
+	format=plain,
+	labelfont=bf,
+	%textfont=it
+}
+
+
+
+% Nastavení odkazů - hyperref
+\hypersetup{ 
+linkbordercolor={1 1 1},	% rámeček kolem odkazu bude bílý
+citebordercolor={1 1 1}		% rámeček kolem odkazu citace bude bílý 
+} 
+
+% Nastavení balíčku pro vkládání zdrojového kódu - lstlistings
+\definecolor{LightGray}{RGB}{245,245,245}
+%\definecolor{LightRed}{RGB}{255,100,100}
+%\definecolor{LightGreen}{RGB}{70,150,60}
+%\definecolor{LightBlue}{RGB}{80,100,240}
+
+\definecolor{LightRed}{RGB}{255,100,100}
+\definecolor{LightGreen}{RGB}{60,143,49}
+\definecolor{LightBlue}{RGB}{39,62,237}
+\definecolor{Purple}{RGB}{162,4,207}
+
+
+\lstset{ %
+language=C++,                % choose the language of the code
+basicstyle=\small\tt\color{black},          % print whole listing small
+keywordstyle=\small\color{LightBlue},	% bold black keywords
+identifierstyle=\small\color{black},           % nothing happens
+commentstyle=\small\color{Rhodamine}, % white comments
+stringstyle=\ttfamily,      % typewriter type for strings
+showstringspaces=false,     % no special string spaces
+numbers=left,                   % where to put the line-numbers
+numberstyle=\tiny\tt,      % the size of the fonts that are used for the line-numbers
+%stepnumber=2,                   % the step between two line-numbers. If it's 1 each line will be numbered
+numbersep=5pt,                  % how far the line-numbers are from the code
+%backgroundcolor=\color{LightGray},  % choose the background color. You must add \usepackage{color}
+showspaces=false,               % show spaces adding particular underscores
+showstringspaces=false,         % underline spaces within strings
+showtabs=false,                 % show tabs within strings adding particular underscores
+frame=single,			% adds a frame around the code
+tabsize=3,	                % sets default tabsize to 2 spaces
+%captionpos=b,                   % sets the caption-position to bottom
+breaklines=true,                % sets automatic line breaking
+breakatwhitespace=false,        % sets if automatic breaks should only happen at whitespace
+%title={Zdrojovy kod},                 % show the filename of files included with \lstinputlisting; also try caption instead of title
+%escapeinside={\%*}{*)}          % if you want to add a comment within your code
+escapechar=!,
+}
+
+\renewcommand{\lstlistingname}{Kód}
+
+\newcommand{\redlist}[1]{{\color{LightRed}#1}}
+\newcommand{\greenlist}[1]{{\color{LightGreen}#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Formátování C++ příkazů uprostřed textu
+\newcommand{\clist}[1]{\texttt{\hyphenchar\font45\relax #1}} % font s fixní vzdáleností
+
+% Makro pro české uvozovky, použití \uv{...}
+\def\bq{\mbox{\kern.1ex\protect\raisebox{-1.3ex}[0pt][0pt]{''}\kern-.1ex}}
+\def\eq{\mbox{\kern-.1ex``\kern.1ex}}
+\def\ifundefined#1{\expandafter\ifx\csname#1\endcsname\relax }%
+\ifundefined{uv}%
+        \gdef\uv#1{\bq #1\eq}
+\fi
+
+\hyphenation{Open-GL}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%% BAKALARSKA PRACE %%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%% POJMY  %%%%%%%%%%%%%%%%%%%%%%            
+
+\newcommand{\cvut}{České vysoké učení technické v~Praze}
+\newcommand{\fjfi}{Fakulta jaderná a fyzikálně inženýrská}
+\newcommand{\km}{Katedra matematiky}
+\newcommand{\obor}{Inženýrská informatika}
+\newcommand{\zamereni}{Tvorba software}
+\newcommand{\nazevcz}{Softwarový nástroj pro manipulaci s daty z magnetické rezonance a jejich vizalizaci}
+\newcommand{\nazeven}{Software instrument for MRI data manipulation and visualization}     
+\newcommand{\autor}{Bc.~Jakub Flaška}
+\newcommand{\rok}{2011}
+\newcommand{\vedouci}{Ing.~Pavel Strachota} 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%% UVODNI STRANA  %%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\thispagestyle{empty}
+
+\begin{center}
+	{\fontsize{20}{20.5} \bf \cvut\\[2mm] \fjfi \\[2mm] \km}	% Název školy, fakulta
+	\vfill
+		\begin{center}
+			\includegraphics[width=50mm]{Text/IMG/00_Logo_CVUT_bw.jpg}	% Logo
+		\end{center}
+	\vfill
+		{\fontsize{35}{36.5} \bf VÝZKUMNÝ ÚKOL}		% BAKALÁŘSKÁ PRÁCE
+	\vfill			
+		{\fontsize{20}{20.5} \bf \nazevcz \vspace{5mm} \par \nazeven}	% Název práce
+	\vfill	
+		{\large %\em %\bf								
+			\begin{tabular}{rl}
+				Autor 		& {\bf	\autor}			\\					% Autor
+				Školitel 	& {\bf	\vedouci }		\\					% Školitel
+				Rok		& {\bf	\rok }			\\					% Rok
+			\end{tabular}
+		}
+\end{center}
+
+
+\begin{comment}
+%%%%%%%%%%%%%%%%%%%%%% PROSTOR PRO ZADANI  %%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\thispagestyle{empty} Sem vložit list s podepsaným zadáním od děkana, jakožto jediný oboustranný list.
+
+
+%%%%%%%%%%%%%%%%%%%%%% PROHLASENI %%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\thispagestyle{empty}
+
+~
+\vfill % prázdné místo
+
+{\bf Prohlášení}
+
+\vspace{0.5cm} % vertikální mezera
+Prohlašuji, že jsem svou bakalářskou práci vypracoval samostatně a použil jsem pouze literaturu uvedenou v přiloženém seznamu.
+
+Nemám závažný důvod proti užití tohoto školního díla ve smyslu \S60 Zákona č.121/2000 Sb. o právu autorském, o právech souvisejících s právem autorským a o změně některých zákonů (autorský zákon).
+
+
+\vspace{5mm}V Praze dne ....................\hfill
+	\begin{tabular}{c}
+	........................................\\ 
+	\autor
+	\end{tabular}
+
+
+%%%%%%%%%%%%%%%%%%%%%% PODEKOVANI %%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\thispagestyle{empty}
+
+~
+\vfill % prázdné místo
+
+{\bf Poděkování}
+
+\vspace{5mm} % vertikální mezera
+Děkuji Ing. Tomášovi Oberhuberovi, Ph.D. za odborné a pro mě přínosné vedení mé bakalářské práce.
+
+\begin{flushright}
+\autor
+\end{flushright}
+
+\end{comment}
+%%%%%%%%%%%%%%%%%%%%%% ABSTRAKT %%%%%%%%%%%%%%%%%
+\begin{comment}
+\newpage
+\input{Text/00.Abstrakt.tex}
+\end{comment}
+
+%%%%%%%%%%%%%%%%%%%%%% OBSAH %%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\tableofcontents
+
+
+%%%%%%%%%%%%%%%%%%%%%%  TEXT PRÁCE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\chapter{Úvod}
+\input{Text/0.1.Uvod.tex}
+
+\chapter{Teoretická část}
+\input{Text/1.1.Kontrast.tex}
+\input{Text/2.1.MoznostiPrekladu.tex}
+
+
+\chapter{Praktická část}
+\input{Text/5.1.ProblemNacitaniDicom.tex}
+\input{Text/2.2.MultiPlanarniRekonstrukce.tex}
+
+
+%%%%%%%%%%%%%%%%%%%%%%  DODATKY  %%%%%%%%%%%%%%%%%%%%%%
+
+%\chapter{Dodatky}
+%\section{Import kódu}
+%\input{Text/07.Import.tex}
+
+%%%%%%%%%%%%%%%%%%%%%%  LITERATURA  %%%%%%%%%%%%%%%%%%%%%%
+
+\nocite{*}				% zobrazuj i necitovane primarni zdroje
+\bibliography{Text/Literatura}
+\nocitesec{*}				% sek. zdroje
+\bibliographysec{Text/Zdroje}
+\bibliographyurl{Text/Odkazy}
+
+
+%%%%%%%%%%%%%%%%%%%%%%  PŘÍLOHY %%%%%%%%%%%%%%%%%%%%%%
+
+% \chapter{Přílohy}
+
+% \input{vnitrek_priloha1.tex} % pøíloha 1: vloená z externího souboru
+% \input{vnitrek_priloha2.tex} % pøíloha 2: vloená z externího souboru
+
+
+
+\end{document}
+

@@ -1,0 +1,51 @@
+\thispagestyle{empty}
+
+% příprava:\usepackage{subfig}
+\newbox\odstavecbox
+\newlength\vyskaodstavce
+\newcommand\odstavec[2]{
+    \setbox\odstavecbox=\hbox{
+         \parbox[t]{#1}{#2\vrule width 0pt depth 4pt}}
+    \global\vyskaodstavce=\dp\odstavecbox
+    \box\odstavecbox}
+\newcommand{\delka}{120mm}
+
+
+\newcommand{\pracovisteVed}{\km,\\ \fjfi,\\ \cvut}
+
+\newcommand{\konzultant}{}
+\newcommand{\pracovisteKonz}{}
+
+\newcommand{\klicova}{programování, GUI, grafické uživatelské rozhraní, C++, Qt, DICOM}
+\newcommand{\keywords}{programming, GUI, graphic user interface, C++, Qt, DICOM}   
+
+
+
+{\noindent \bf \large Abstrakt} \\[5mm]
+\begin{tabular}{ll}
+	{\em Název práce:}	& \nazevcz	\\[1mm]
+	{\em Autor:}		& \autor	\\[1mm]
+	{\em Obor:} 		& \obor		\\[1mm]
+	{\em Druh práce:}	& Bakalářská	\\[1mm]
+	{\em Vedoucí práce:}	& \vedouci	\\
+				& \km		\\
+				& \fjfi		\\
+				& \cvut		\\[1mm]
+	{\em Klíčová slova:}	& \odstavec{\delka}{\klicova}	\\
+\end{tabular}\\[5mm]
+Práce se zabývá programováním aplikací pro prohlížení snímků z magnetické resonance, seznamuje se s existujícím prohlížečem snímků, který byl na fakultě vyvíjen, a popisuje drobné úpravy jež byly v programu udělány.
+
+V teoretické části jsou shrnuty poznatky o programování aplikací s grafickým uživatelským rozhraním (s využitím frameworku Qt), dále je popsána práce se standardem OpenGL pro programování aplikací se složitějším grafickým výstupem a je představen programovací jazyk Cg pro provádění výpočtů na výstupních datech grafické karty.
+
+V praktické části je pak představen objektový model existujícího prohlížeče a jsou popsány úpravy, které byly v kódu v rámci této bakalářské práce provedeny. Jedná se o psaní univerzálních skriptů pro překlad na různých operačních systémech (standard Cmake) a dále odstraňování chyb jež se v programu podařilo najít. \\[5mm]
+
+\noindent
+\begin{tabular}{ll}
+	{\em Title:}	& \nazeven	\\[1mm]
+	{\em Keywords:}	& \odstavec{\delka}{\keywords}	\\
+\end{tabular}\\[5mm]
+This bachelor thesis focuses on programming applications for viewing magnetic resonance data. This thesis also examines an existing MRI data viewer developed on FNSPE faculty and describes few adjustmets which has been made.
+
+Theoretical part of this project is concentrated on GUI application programming using Qt framework. Besides, it focuses on programming applications with more complicated visual output using OpenGL standard and also programming GPU executed scripts written in Cg language.
+
+Practical part of this project describes object model of existing MRI data viewer and also describes the few interventions made in programm. A script for automated compilation on various platforms has been written and few bugs were fixed in program.
