@@ -5,15 +5,17 @@ S podobnými problémy s jakými se potýkají volně šiřitelné prohlížeče
 
 Při bližším zkoumání, proč snímky nelze nalézt, se podařilo objevit, v které části kódu nastává problém:
 
-\begin{lstlisting}[label=DicomImageClass,caption={První část souboru \texttt{Window.cpp} se zdrojovým kódem třídy reprezentující okno programu.}]
+\begin{lstlisting}[label=DicomImageClass,caption={Při otevírání snímku aplikace havarovala, k pádu aplikace došlo ve funkci \clist{CDicomFramed::LoadDicomImage} na uvedeném řádku (zde řádek 3).}]
 bool CDicomFrames::LoadDicomImage(char *fileName, bool isFirst, int framesCount ) {
+ 	...
 	iDicomImage = new DicomImage (fileName);
 	...	
 }
 \end{lstlisting}
 
-Přičemž je potřeba zdůraznit, že \clist{DicomImage} je třída knihovny \clist{dcmtk}. Její konstruktor je definován:
-\begin{lstlisting}[label={DicomImage}]
+Konstruktor třídy \clist{DicomImage} je definovám v knihovně DCMTK.
+
+\begin{lstlisting}[label={DicomImage},caption={Definice konstruktoru třídy \clist{DicomImage}.}]
 DicomImage::DicomImage (const char *filename,
     const unsigned long flags = 0,
     const unsigned long fstart = 0,
@@ -23,18 +25,13 @@ DicomImage::DicomImage (const char *filename,
 }
 \end{lstlisting}
 
-a dále hodnota předávaného parametru \clist{fileName} byla:
+Hodnota předávané proměnné ukazatelem \clist{fileName} byla: \clist{"C:/Dev/Samples/IMG-0001-0001.dcm"}.
 
-\clist{"C:/Dev/Samples/IMG-0001-0001.dcm"}.
-
-Z uvedeného vyplívá, že kontruktor třídy byl volán správně a se správným parametrem. Problém tedy vznikal někde uvnitř knihovny \clist{dcmtk}, která nedokázala správně načíst požadovaný soubor. Zdůrazněme ještě, že se jednalo o DICOM soubory z archivu Ženevské universitní nemocnice určené pro studijní účely.
+V uvedené části kódu není možné nalézt chybu, kterou by programátor udělal. Problém tedy vznikal někde uvnitř knihovny \clist{dcmtk}, která nedokázala správně načíst požadovaný soubor. Zdůrazněme ještě, že se jednalo o DICOM soubory z archivu Ženevské universitní nemocnice určené pro studijní účely.
 
 \subsection{Hledání příčiny selhání}
-Jak bylo popsáno výše, knihovna DCMTK zhavarovala při načítání DICOM snímku, nebylo však možné zjistit v které části dcmtk knihovny nastal problém. Pro bližší diagnostiku problému v externí knihovně je potřeba si knihovnu přeložit v debug verzi, kdy si pak můžeme nechat vypsat konkrétní řádek na kterém nastala chyba (viz. str. \pageref{releasedebug}).
-
-Problém byl však v tom, že pokud byla knihovna přeložena v Release konfiguraci, tak obrázek nedokázala načíst a při načítání obrázku program havaroval: došlo k neoprávněnému čtení z/zápisu do místa v paměti, které nebylo pro program vyhrazeno (access violation, respektive segmentation fault (viz. práce \cite{flaska} strana 39)). Pokud byla knihovna přeložena v Debug konfiguraci, načítání obrázku proběhlo do konce, program nezhavaroval a běh programu dále pokračoval. Příčina tohoto rozdílného chování je popsána na straně \pageref{releasedebug} této práce.
-
-Běžná praxe u používaných C++ knihoven, které pracují s externími daty je taková, že si lze v průběhu programu vyžádat od knihovny, aby nám popsala, jak dopadl poslední požadavek:
+Jak bylo popsáno výše, knihovna DCMTK zhavarovala při načítání DICOM snímku, nebylo však možné zjistit, v které části dcmtk knihovny nastal problém. Pro bližší diagnostiku problému v externí knihovně je potřeba si knihovnu přeložit v debug verzi, kdy si pak můžeme nechat vypsat konkrétní řádek na kterém nastala chyba (viz. str. \pageref{releasedebug}).
+Po přeložení aplikace v Debug verzi program po načtení stejného snímku nezhavaroval, jen na obrazovce nebylo nic vidět. Díky tomu, že program nezhavaroval můžeme si pomocí diagnostické funkce DCMTK knihovny nechat vypsat informace o tom, jak načítání snímků dopadlo. Použití takových diagnostických funkcí je běžná praxe u knihoven. Uveďme několik příkladů diagnostických funkcí u  n některých knihoven:
 
 \hspace{-1cm}
 \begin{tabular}{| p{3cm} | p{3cm} | p{2cm} | p{6cm} | }
@@ -50,7 +47,7 @@ Běžná praxe u používaných C++ knihoven, které pracují s externími daty 
   \hline
 \end{tabular}
 
-V případě knihovny DCMTK je situace podobná jako u výše zmíněných knihoven. Po uvedeném volání konstruktoru na řádku 2 kódu \ref{DicomImageClass} můžeme zjistit stav jak vytvoření objektu dopadlo:
+Knihovna DCMTK nám umožňuje pomocí diagnostické funkce \clist{DicomImage::getStatus()} zjistit stav v jakém se objekt nachází, tzn. můžeme zjistit, jak dopadlo načítání snímku.
 
 \begin{lstlisting}[label={xxx}]
 iDicomImage = new DicomImage (fileName);
@@ -59,13 +56,13 @@ EI_Status imageStatus;
 imageStatus = iDicomImage->getStatus();
 \end{lstlisting}
 
-Výčtový typ \clist{EI\_Status} může nabývat hodnot: EIS\_Normal, EIS\_InvalidValue, atd.
+\clist{EI\_Status} je výčtový typ, tzn. proměnná typu \clist{EI\_Status} může nabývat omezené množiny hodnot (např. EIS\_Normal, EIS\_InvalidValue).
 
 Pomocí funkce \clist{DicomImage::getStatus()} bylo tedy možné zjistit, že v debug verzi načítání snímku proběhně s chybou, a to konkrétně:
 
  \clist{EIS\_MissingAttribute}
 
-Po zkoumání, co tato chyba znamená, vyplynulo, že načítaný DICOM soubor nemá svou hlavičku ve vyhovujícím stavu. Lze se dohledat, že nástroj: \clist{gdcmconv} dokáže nevyhovující hlavičku DICOM souboru převést do univerzálního tvaru, který bude akceptovat i knihovna DCMTK.
+Po zkoumání, co tato chyba znamená, vyplynulo, že načítaný DICOM soubor nemá svou hlavičku v odpovídajícím formátu. Lze se dohledat, že nástroj: \clist{gdcmconv} dokáže nevyhovující hlavičku DICOM souboru převést do univerzálního tvaru, který bude akceptovat i knihovna DCMTK.
 
 \subsection{Integrace externího nástroje do programu}
 Zmiňovaný nástroj \clist{gdcmconv} dokáže opravit nekompatibilní hlavičku DICOM souboru. Otázkou bylo, jak tento nástroj do našeho programu integrovat. Nabízely se dvě odlišné varianty. První variantou by bylo:
@@ -82,7 +79,7 @@ Problém však je v tom, že program DicomPresenter už tak závisí na šesti r
 Obstarat program \clist{gdcmconv} jakožto spustitelný soubor. \clist{gdcmconv} pak spouštět v C++ jako externí program funkcí \clist{system(...)}.
 \end{itemize}
 
-Tato možnost se jevila jako vhodnější. Pro překlad DicomPresenteru nebode potřeba zdrojový kód programu \clist{gdcmconv}, bude stačit hotový program zkopírovat do adresáře DicomPresenteru. Pokud programátor nebude schopný program obstarat, DicomPresenter poběží i bez něj za cenu, že nebude možné otevřít určité DICOM soubory.
+Tato možnost se jevila jako vhodnější. Pro překlad DicomPresenteru nebude potřeba zdrojový kód programu \clist{gdcmconv}, bude stačit hotový program zkopírovat do adresáře DicomPresenteru. Pokud programátor nebude schopný program obstarat, DicomPresenter poběží i bez něj za cenu, že nebude možné otevřít určité DICOM soubory.
 
 Po těchto úvahách byla implementována druhá možnost řešení. Kód funkce \clist{LoadDicomImage} (viz. kód \ref{DicomImageClass}) byl upraven následujícím způsobem:
 

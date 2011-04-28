@@ -75,7 +75,13 @@ Nejlépe je pak vidět uvedená transfmormace, když si její transformační k�
 
 Pro $ c_{contrast}=1 $, tedy pro transformaci, jež zachová obrázek v původním stavu, bude graf funkce $ Cont(*,c_{contrast}) $ vypadat následovně:
 
+%\begin{figure}[here]
+\begin{center}
 \includegraphics[width=0.7\textwidth,height=0.7\textwidth]{Text/IMG/Kontrast_Identita.jpg}
+\end{center}
+%\caption{Křivka znázorňující barevnou transformaci, při které se snímek nezmění.}
+%\label{kontrastKrivka}
+%\end{figure}
 
 Pixel o vstupní intenzitě $0.25$ bude mít výstupní intenzitu $0.25$.
 
@@ -84,12 +90,20 @@ Vezmeme-li v úvahu uvedený vzorec a vezmeme-li dále v úvahu podmínku $ Im(x
 
 Pak můžeme křivku transformace pro $ c_{contrast}=1.25 $ načrtnout takto:
 
-\includegraphics[width=0.7\textwidth,height=0.7\textwidth]{Text/IMG/Kontrast_Transformace_1.jpg}
 
-Křivka na obrázku má strmější spád. To znamená, že světlejší pixely (s původní světlostí $> 0.5$) se staly ještě světlejší a naopak tmavší pixely (s původní světlostí $< 0.5$) ještě více ztmavly. Z uvedeného nákresu je pak vidět co vyplývá z předpisu transformace a podmínek $ Im(x,y) \in [0,1]$. Při zvýšení kontrastu koeficientem k se intenzita všech bodů, jejichž intenzita je z intervalu $ [0,\frac{1}{2k}] $, změní na $0$ a dále intenzita všech bodů, jejíchž původní intenzita byla v intervalu $[1-\frac{1}{2k},1]$, se změní na hodnotu $1$. Jinými slovy, jak se v odborné terminologii užívá, dojde ke ztrátě grafické informace a to v uvedených množinách bodů. Volnější parafrázi bychom řekli, že odstíny největlejší bodů se slijí do jediného odstínu a odstíny nejtmavších bodů se slijí do jediného odstínu, více na následujícím příkladu:
+%\begin{figure}
+\begin{center}
+\includegraphics[width=0.7\textwidth,height=0.7\textwidth]{Text/IMG/Kontrast_Transformace_1.jpg}
+\end{center}
+%\caption{Transformační křivka změny kontrastu.}
+%\label{kontrastKrivka}
+%\end{figure}
+
+Křivka na obrázku má strmější spád. To znamená, že světlejší pixely (s původní světlostí $> 0.5$) se staly ještě světlejší a naopak tmavší pixely (s původní světlostí $< 0.5$) ještě více ztmavly. Z uvedeného nákresu je pak vidět co vyplývá z předpisu transformace a podmínek $ Im(x,y) \in [0,1]$. Při zvýšení kontrastu koeficientem k se intenzita všech bodů, jejichž intenzita je z intervalu $ [0,\frac{1}{2k}] $, změní na $0$ a dále intenzita všech bodů, jejíchž původní intenzita byla v intervalu $[1-\frac{1}{2k},1]$, se změní na hodnotu $1$. Jinými slovy, jak se v odborné terminologii užívá, dojde ke ztrátě grafické informace a to v uvedených množinách bodů. Volnější parafrázi bychom řekli, že odstíny největlejší bodů se slijí do jediného odstínu a odstíny nejtmavších bodů se slijí do jediného odstínu (viz tabulka \ref{highcontrast}).
 
 \begin{table}%[ht]
 	\caption{Příklad příliš výrazné změny kontrastu, kdy dochází ke ztrátě grafické informace.}
+\label{highcontrast}
 		\begin{tabular}{p{7cm}p{7cm}}
 \includegraphics[width=0.5\textwidth,height=0.35\textwidth]{Text/IMG/London.jpg} & \includegraphics[width=0.5\textwidth,height=0.35\textwidth]{Text/IMG/London_High_Contrast.jpg} \\
 \center{Původní obrázek.} & \center{Obrázek po změně kontrastu.}\\
@@ -98,5 +112,62 @@ Křivka na obrázku má strmější spád. To znamená, že světlejší pixely 
 
 Nejmodernější počítačové programy pak používají nelineární transformace pro změnu kontrastu. Při jejich použití nedochází ke ztrátě grafické informace. Křivka takové transformace pak vypadá přibližně takto: 
 
+\begin{center}
 \includegraphics[width=0.7\textwidth,height=0.7\textwidth]{Text/IMG/Kontrast_Transformace_2.jpg}
+\end{center}
+
+\subsection{Kontrast v OpenGL}
+Knihovna OpenGL nenabízí funkce pro změnu kontrastu snímku. Knihovna nabízí pouze funkce manipulující s parametry: bias, scale.
+
+Parametr bias je koeficient, kterým násobíme barevnou složku pixelu. Podíváme li se znovu na graf zobrazující křivku barevné transformace, pak pro bias=1,5 bude křivka vypadat takto:
+
+\begin{center}
+\includegraphics[width=0.5\textwidth]{Text/IMG/Bias.png}
+\end{center}
+
+Parametrem bias tedy násobíme barvu každého pixelu (hodnota je pak automaticky oříznuta na přípustnou mez). Lze to interpretovat tak, že parametr bias mění směrnici transformační křivky.
+
+Chceme-li provést změnu kontrastu snímku, nestačí nám pouze násobit barvu všech pixelů a změnit tak sklon transformační křivky. Musíme dále křivku posunout aby neprocházela bodem (0,0), ale (0.5,0.5), jak je vidět na obrázku \ref{kontrastKrivka}.
+
+Parametr scale dokáže přičíst konstantu k barevné hodnotě všech pixelů. Znamená to tedy, že parametr scale mění jas snímku. Viz graf:
+
+\begin{center}
+\includegraphics[width=0.5\textwidth]{Text/IMG/Scale.png}
+\end{center}
+
+Jak lze předpokládat z obou příkladů, zkombinujeme-li obě transformace, tj. změníme-li směrnici transformační křivky grafu a posuneme-li ji o správnou hodnotu, lze dosáhnout transformace, která odpovídá změně kontrastu.
+
+Volme parametry:
+
+Bias = 1.2
+Scale = -0.1
+
+Pak graf bude vypadat:
+
+\begin{center}
+\includegraphics[width=0.5\textwidth]{Text/IMG/BiasScale.png}
+\end{center}
+
+Jak plyne z předchozího, pomocí parametrů Bias a Scale lze docílit změny kontrastu snímku. Pomocí parametru Scale lze docílit změny světlosti.
+
+\subsection{Kontrast v knihovně Cg}
+Knihovna Cg toolkit nám nabízí programování vlastních výpočtů s barvou pixelů. Paleta možných transformací je pak velice široká a implementace je jednoduchá - program napíšeme v jazyku Cg, který je velice podobný jazyku C.
+
+Implementace změny kontrastu pak bude vypadat:
+\begin{lstlisting}[label=DicomImageClass,caption={...}]
+C3E3f_Output main(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEX0, uniform float brightness){
+  C3E3f_Output OUT;
+  OUT.color = tex2D(decal,texCoord)*bias - scale;
+  return OUT;
+}
+\end{lstlisting}
+
+Ve srovnání s OpenGL je tato implementace výrazně přehlednější. Podíváme-li se na řádek 3, vidíme hned zápis transformační funkce ve tvaru: f(x) = k*x - z. Jak již lze předpokládat: s jazykem Cg můžeme jednoduše popisovat mnohem složitější transformace využívající elementárních matematických funkcí: log, exp, sin.
+
+
+
+
+\subsection{Závěr}
+Z programu DicomPresenter je možné odstranit knihovnu Cg. Omezíme-li se v programu na použití pouze elementárních obrazových transformací: kontrast a jas, můžeme tyto implementovat i v OpenGL. Důvodem, proč je v programu použita knihovna Cg toolkit, bylo v práci \cite{neskudla} uvedeno, že bez ní dojde při vícenásobné transformaci oříznutí barev obrázku: když kontrast hodně zvýšíme a opět snížíme, vytrarí se z obrázku část původní informace. Toto však lze obejít, uložíme-li si snímek do paměti dvakrát: původní s nezměněným kontrastem a výsledný po změně, který zobrazíme uživateli. Bude-li si přát uživatel další změnu kontrastu, nebudeme jí počítat ze snímku, který vidí, ale z původního, jež je uložen v paměti. Nevýhoda tohoto řešení je ta, že pro dvojrozměrné snímky budeme zatěžovat operační paměť dvojnásobkem dat. Vzhledem k tomu, že snímky jsou uloženy v paměti grafické karty je toto omězení poměrně vážné (pro starší grafické karty).
+
 
