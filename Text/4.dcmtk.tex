@@ -1,0 +1,121 @@
+\newpage
+\chapter{DCMTK}
+\section{Problém s načítáním DICOM snímků}
+Situace na poli prohlížečů lékařských snímků je dosti komplikovaná. V práci\cite{flaska} na str. 10 je to blíže vysvětleno: Prohlížeče DICOM snímků jsou buď komerčními placenými produkty a nebo jsou volně šiřitelné, ale nedosahují takových kvalit. Při vývoji DicomPresenteru byl program testován na určité množině snímků (např. archiv ženevské university\citesec{DicomSamples}). Velice známý prohlížeč Medinria, pak nezanedbatelnou část těchto snímků nedokázal správně zobrazit (buď je nenačetl vůbec, nebo je zobrazil s chybami). Tento fakt jen dokazuje to, že volně šiřitelné prohlížeče jsou zatím zpravidla ve fázi vývoje a vývoj DicomPresenteru tak má smysl, neboť pomyslný trh zatím není žádným významným prohlížečem obsazen (jiná situace je u Mac OS X\footnote{Pro operační systém Mac OS X byl vytrořen velice úspešný prohlíčeč OsiriX. Z tohoto důvodu není moc vhodné DicomPresenter v budoucno portovat pro Mac OS X, neboť tam má prohlížeč silnou konkurenci a tak by o něj zřejmě málokdo jevil zájem.}).
+
+S podobnými problémy s jakými se potýkají volně šiřitelné prohlížeče se však potýká i DicomPresenter. Při rozsáhlejším testování programu na větší množině dat nastal problém, že prohlížeč nedokázal načíst poměrně rozsáhlou skupinu DicomSnímků (jiná část snímků ze zmíněného archivu), navíc prohlížeč při pokusu o načtení takového snímku zhavaroval. To se jevilo jako dost závažný problém.
+
+Při bližším zkoumání, proč snímky nelze nalézt, se podařilo objevit, v které části kódu nastává problém:
+
+\begin{lstlisting}[label=DicomImageClass,caption={Při otevírání snímku aplikace havarovala, k pádu aplikace došlo ve funkci \clist{CDicomFramed::LoadDicomImage} na uvedeném řádku (zde řádek 3).}]
+bool CDicomFrames::LoadDicomImage(char *fileName, bool isFirst, int framesCount ) {
+ 	...
+	iDicomImage = new DicomImage (fileName);
+	...	
+}
+\end{lstlisting}
+
+Konstruktor třídy \clist{DicomImage} je definovám v knihovně DCMTK.
+
+\begin{lstlisting}[label={DicomImage},caption={Definice konstruktoru třídy \clist{DicomImage}.}]
+DicomImage::DicomImage (const char *filename,
+    const unsigned long flags = 0,
+    const unsigned long fstart = 0,
+    const unsigned long fcount = 0)
+{
+...
+}
+\end{lstlisting}
+
+Hodnota předávané proměnné ukazatelem \clist{fileName} byla: \clist{"C:/Dev/Samples/IMG-0001-0001.dcm"}.
+
+V uvedené části kódu není možné nalézt chybu, kterou by programátor udělal. Problém tedy vznikal někde uvnitř knihovny \clist{dcmtk}, která nedokázala správně načíst požadovaný soubor. Zdůrazněme ještě, že se jednalo o DICOM soubory z archivu Ženevské universitní nemocnice určené pro studijní účely.
+
+\subsection{Hledání příčiny selhání}
+Jak bylo popsáno výše, knihovna DCMTK zhavarovala při načítání DICOM snímku, nebylo však možné zjistit, v které části dcmtk knihovny nastal problém. Pro bližší diagnostiku problému v externí knihovně je potřeba si knihovnu přeložit v debug verzi, kdy si pak můžeme nechat vypsat konkrétní řádek na kterém nastala chyba (viz. str. \pageref{releasedebug}).
+Po přeložení aplikace v Debug verzi program po načtení stejného snímku nezhavaroval, jen na obrazovce nebylo nic vidět. Díky tomu, že program nezhavaroval můžeme si pomocí diagnostické funkce DCMTK knihovny nechat vypsat informace o tom, jak načítání snímků dopadlo. Použití takových diagnostických funkcí je běžná praxe u knihoven. Uveďme několik příkladů diagnostických funkcí u  n některých knihoven:
+
+\hspace{-1cm}
+\begin{tabular}{| p{3cm} | p{3cm} | p{2cm} | p{6cm} | }
+  \hline                       
+  Knihovna & Funkce & Typ & Příklady \\
+  \hline
+  \hline                     
+  OpenGL & glGetError() & GLenum & GL\_INVALID\_VALUE, GL\_OUT\_OF\_MEMORY\\
+  \hline
+  Cg toolkit & cgGetError()  & CGerror & CG\_NO\_ERROR, CG\_COMPILER\_ERROR\\
+  \hline
+  .NET4 System\-.Windows\-.Forms & GetError(Control) & String & System\-::Argument\-Exception, System::IO\-::Directory\-NotFound\-Exception\\
+  \hline
+\end{tabular}
+
+Knihovna DCMTK nám umožňuje pomocí diagnostické funkce \clist{DicomImage::getStatus()} zjistit stav v jakém se objekt nachází, tzn. můžeme zjistit, jak dopadlo načítání snímku.
+
+\begin{lstlisting}[label={xxx}]
+iDicomImage = new DicomImage (fileName);
+
+EI_Status imageStatus;
+imageStatus = iDicomImage->getStatus();
+\end{lstlisting}
+
+\clist{EI\_Status} je výčtový typ, tzn. proměnná typu \clist{EI\_Status} může nabývat omezené množiny hodnot (např. EIS\_Normal, EIS\_InvalidValue).
+
+Pomocí funkce \clist{DicomImage::getStatus()} bylo tedy možné zjistit, že v debug verzi načítání snímku proběhně s chybou, a to konkrétně:
+
+ \clist{EIS\_MissingAttribute}
+
+Po zkoumání, co tato chyba znamená, vyplynulo, že načítaný DICOM soubor nemá svou hlavičku v odpovídajícím formátu. Lze se dohledat, že nástroj: \clist{gdcmconv} dokáže nevyhovující hlavičku DICOM souboru převést do univerzálního tvaru, který bude akceptovat i knihovna DCMTK.
+
+\subsection{Integrace externího nástroje do programu}
+Zmiňovaný nástroj \clist{gdcmconv} dokáže opravit nekompatibilní hlavičku DICOM souboru. Otázkou bylo, jak tento nástroj do našeho programu integrovat. Nabízely se dvě odlišné varianty. První variantou by bylo:
+
+\begin{itemize}
+\item
+Přeložit zdrojový kód programu \clist{gdcmconv} tak, že si vytvoříme C++ knihovnu. Knihovnu pak připojíme do programu DicomPresenter tak, že funkce programu \clist{gdcmconv} budeme moct používat uvnitř našeho programu.
+\end{itemize}
+
+Problém však je v tom, že program DicomPresenter už tak závisí na šesti různých knihovnách a tím se značně komplikuje jeho překlad. Při překladu aplikace by se pak programátor musel vázat na další knihovnu a musel by vždy obstarat zdrojový kód knihovny a přeložit si ji do \clist{.lib} souborů. V případě, že by zdrojový kód nenašel, nebo by se mu knihovnu programu \clist{gdcmconv} nepodařilo přeložit, nemohl by pak přeložit ani program DicomPresenter. Více o problematice překladu programu závislého na několika externích knihovnách v části \ref{sec:preklad} (str. \pageref{sec:preklad}). Proto tedy druhá varianta:
+
+\begin{itemize}
+\item
+Obstarat program \clist{gdcmconv} jakožto spustitelný soubor. \clist{gdcmconv} pak spouštět v C++ jako externí program funkcí \clist{system(...)}.
+\end{itemize}
+
+Tato možnost se jevila jako vhodnější. Pro překlad DicomPresenteru nebude potřeba zdrojový kód programu \clist{gdcmconv}, bude stačit hotový program zkopírovat do adresáře DicomPresenteru. Pokud programátor nebude schopný program obstarat, DicomPresenter poběží i bez něj za cenu, že nebude možné otevřít určité DICOM soubory.
+
+Po těchto úvahách byla implementována druhá možnost řešení. Kód funkce \clist{LoadDicomImage} (viz. kód \ref{DicomImageClass}) byl upraven následujícím způsobem:
+
+\begin{lstlisting}[label={xxx}]
+bool CDicomFrames::LoadDicomImage(char *fileName, bool isFirst, int framesCount ) {
+	iDicomImage = new DicomImage (fileName);
+	EI_Status imageStatus = iDicomImage->getStatus();
+
+	if (imageStatus==EIS_MissingAttribute){			
+		QString strCommand("gdcmconv --raw --force ");
+		strCommand.append(fileName);
+		strCommand.append(" temp.dcm");
+		int i = system(strCommand.toAscii().data());
+		if(i==0){
+			iDicomImage=NULL;
+			iDicomImage = new DicomImage ("temp.dcm");
+			remove("temp.dcm");
+		}else{
+			QMessageBox msgBox;
+			msgBox.setText("DICOM file is missing some header attribute.");
+			msgBox.exec();
+		}		
+	}
+ ...
+}
+\end{lstlisting}
+
+Na řádku 3 si zjistíme, jak dopadlo načítání souboru. Pokud došlo k chybě (řádek 5), pak spouštíme externí program \clist{gdcmconv} s danými parametry (na řádcích 6-9) je sestavován celý příkaz. Příkaz:
+
+\clist{gdcmconv --raw --force <nazevsouboru> temp.dcm}
+
+nechá převést nevyhovující DICOM soubor na nový bezproblémový DICOM soubor. Pokud vytvoření nového souboru proběhně bez problému (řádek 10), pak je namísto původního souboru načten soubor nový. V opačném případě se uživateli objeví chybová hláška.
+
+Po uvedené úpravě v kódu se výrazně zvýšil počet snímků, které DicomPresenter dokáže otevřít. Kód programu se nijak výrazně nezkomplikoval, ani by nový kus kódu neměl způsobit nějakou další chybu.
+
+
+

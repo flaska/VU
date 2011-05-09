@@ -31,6 +31,8 @@
 \usepackage{array}		%
 \usepackage{caption}		% Popisky obrázků jiným písmem, než zbytek textu.
 \usepackage{amsmath}
+\usepackage[all]{hypcap}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Formát textu
@@ -256,21 +258,13 @@ Děkuji Ing. Tomášovi Oberhuberovi, Ph.D. za odborné a pro mě přínosné ve
 %%%%%%%%%%%%%%%%%%%%%%  TEXT PRÁCE %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-\chapter{Úvod}
-\input{Text/0.1.Uvod.tex}
 
-\chapter{Teoretická část}
-\input{Text/1.1.Kontrast.tex}
-\newpage
-\input{Text/1.2.RychlostVykreslovani.tex}
-\newpage
-\input{Text/2.1.MoznostiPrekladu.tex}
-
-
-\chapter{Praktická část}
-\input{Text/5.1.ProblemNacitaniDicom.tex}
-\newpage
-\input{Text/5.2.MultiPlanarniRekonstrukce.tex}
+\input{Text/0.Uvod.tex}
+\input{Text/1.OProhlizeci.tex}
+\input{Text/2.Preklad.tex}
+\input{Text/3.OpenGL.tex}
+\input{Text/4.dcmtk.tex}
+\input{Text/5.MPR.tex}
 
 
 %%%%%%%%%%%%%%%%%%%%%%  DODATKY  %%%%%%%%%%%%%%%%%%%%%%

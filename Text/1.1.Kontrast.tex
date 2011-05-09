@@ -1,9 +1,7 @@
 \section{Změna světlosti a kontrastu}
-Prvním úkolem po konzultaci se školitelem bylo pokud je to možné odstranění knihovny Cg toolkit z kódu programu \cite[str. 23]{flaska}. Při prvních pokusech o nasazení programu do zkušebního provozu v IKEM dělala tato knihovna velké potíže. Program nefungoval na počítačích s grafickou kartou NVIDIA GeForce, respektive fungoval, ale bez stěžejní součásti pro změnu světlosti  kontrastu zobrazovaných snímků. Tyto funkce jsou však velice důležité (dle lékařů z IKEM), protože výrazně ovlivňují to, co bude na snímku vidět.
+Pro případné odstranění knihovny Cg toolkit z DicomPresenteru, je potřeba nastudovat, zda je možné její funkce nějak realizovat v OpenGL. V případě DicomPresenteru potřebujeme provádět změnu kontrastu a jasu snímku, dále by bylo vhodné v budoucnu implementovat změnu gamma korekce.
 
-Dalším důvodem pro odstranění závislosti na knihovně Cg Toolkit je to, že program závisí již na více než pěti externích knihovnách a to komplikuje překlad. Více viz~\pageref{sec:preklad} 
-
-Pro odstranění závislosti na knihovně Cg toolkit je potřeba pochopit, co přesně kód této části programu provádí, a dále dohledat vhodné řešení problému bez použití knihovny Cg toolkit, tj. s použitím pouze OpenGL. Bc. Neškudla obhajuje ve své práci použití Pixel Shaderu tím, že při stejných transformacích prováděných pomocí OpenGL dojde ke ztrátě dat obrazu. Tato kapitola vysvětlí, co znamená změna světlosti, respektive kontrastu snímku, proč dochází ke ztrátě dat a jak tyto tranfsormace provádět aby ke ztrátě dat nedošlo.
+Knihovna OpenGL nedisponuje žádnou funkcí pro změnu kontrastu, ale elementárními funkcemi úpravy obrazu vycházejícími ze sčítání a násobení. Abychom zjistili, zda jde změna kontrastu pomocí těchto operací implementovat a dále, zda je taková implementace vyhovující pro běh programu, je potřeba nejdříve nastudovat teorii, co to vlastně změna kontrastu je. Teorii stručně shrnuje první část této sekce, v druhé části je pak rozebrány vlastnosti takové implementace.
 
 \subsection{Světlost a kontrast}
 Pro naprogramování funkcí pro změnu světlosti a kontrastu je potřeba nejprve pochopit o jaké matematické operace se jedná. V našem případě se můžeme omezit jen na černobílé snímky, protože výstupem MRI jsou pouze černobílé snímmky. Obrázek tedy můžeme chápat jako matici čísel mezi $0$ a $1$, kde sloupce, respektive řádky odpovídají souřadnicím bodu v obrázku:
@@ -116,26 +114,38 @@ Nejmodernější počítačové programy pak používají nelineární transform
 \includegraphics[width=0.7\textwidth,height=0.7\textwidth]{Text/IMG/Kontrast_Transformace_2.jpg}
 \end{center}
 
-\subsection{Kontrast v OpenGL}
-Knihovna OpenGL nenabízí funkce pro změnu kontrastu snímku. Knihovna nabízí pouze funkce manipulující s parametry: bias, scale.
 
-Parametr bias je koeficient, kterým násobíme barevnou složku pixelu. Podíváme li se znovu na graf zobrazující křivku barevné transformace, pak pro bias=1,5 bude křivka vypadat takto:
+
+
+
+\newpage
+\subsection{Kontrast a světlost v OpenGL}
+Pro grafické operace disponuje knihovna OpenGL s funkcemi Bias a Scale. Po bližším nastudování obou funkcí lze zjistit, že přirozeně vychází z matematických funkcí sčítámí a násobení.
+
+\begin{itemize}
+\item Voláním funkce Scale s parametry K,B provedeme přičtení konstanty K k hodnotě barevné složky B a to pro všechny pixely obrázku.
+\item Voláním funkce Bias s parametry K,B provedeme vynásobení stávající barevné složky B konstantou K a to pro všechny pixely obrázku.
+\end{itemize}
+
+Podíváme-li se na křivku barevné transformace při volání funkce Bias s parametrem 1,5 bude křivka vypadat takto:
 
 \begin{center}
 \includegraphics[width=0.5\textwidth]{Text/IMG/Bias.png}
 \end{center}
 
-Parametrem bias tedy násobíme barvu každého pixelu (hodnota je pak automaticky oříznuta na přípustnou mez). Lze to interpretovat tak, že parametr bias mění směrnici transformační křivky.
+Výsledek lze interpretovat tak, že parametr Bias mění směrnici transformační křivky, nemění však její posunutí.
 
-Chceme-li provést změnu kontrastu snímku, nestačí nám pouze násobit barvu všech pixelů a změnit tak sklon transformační křivky. Musíme dále křivku posunout aby neprocházela bodem (0,0), ale (0.5,0.5), jak je vidět na obrázku \ref{kontrastKrivka}.
+Transformační křivka pro změnu kontrastu ale vždy prochází bodem [ 0,5 ; 0,5 ]. Křivku z předchozího obrázku tak musíme o konstantu posunout.
 
-Parametr scale dokáže přičíst konstantu k barevné hodnotě všech pixelů. Znamená to tedy, že parametr scale mění jas snímku. Viz graf:
+Přičítání konstanty k hodnotě barevné složky pro všechny pixely obrázku tak jak to provádí funkce Scale právě odpovídá posunutí křivky transformace.
+
+Podíváme-li se na transformační křivku po volání funkce Scale s parametrem 0,25, bude vypadat takto:
 
 \begin{center}
 \includegraphics[width=0.5\textwidth]{Text/IMG/Scale.png}
 \end{center}
 
-Jak lze předpokládat z obou příkladů, zkombinujeme-li obě transformace, tj. změníme-li směrnici transformační křivky grafu a posuneme-li ji o správnou hodnotu, lze dosáhnout transformace, která odpovídá změně kontrastu.
+Jak lze vydedukovat z vlastností u obou příkladů, zkombinujeme-li obě transformace, tj. změníme-li směrnici transformační křivky grafu a posuneme-li ji o správnou hodnotu, lze dosáhnout transformace, která odpovídá změně kontrastu.
 
 Volme parametry:
 
@@ -148,7 +158,9 @@ Pak graf bude vypadat:
 \includegraphics[width=0.5\textwidth]{Text/IMG/BiasScale.png}
 \end{center}
 
-Jak plyne z předchozího, pomocí parametrů Bias a Scale lze docílit změny kontrastu snímku. Pomocí parametru Scale lze docílit změny světlosti.
+Tato transformační křivka přesně odpovídá jednodušší (často implementované) variantě změny kontrastu.
+
+
 
 \subsection{Kontrast v knihovně Cg}
 Knihovna Cg toolkit nám nabízí programování vlastních výpočtů s barvou pixelů. Paleta možných transformací je pak velice široká a implementace je jednoduchá - program napíšeme v jazyku Cg, který je velice podobný jazyku C.

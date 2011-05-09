@@ -1,10 +1,8 @@
+\chapter{Úvod}
 \vspace{-10mm}
-Tématem tohoto výzkumného úkolu je vývoj prohlížeče snímků na magnetickou rezonanci. Vývoj prohlížeče byl započat Bc. Neškudlou v rámci jeho diplomové práce \cite{neskudla}. Vývoj posléze pokračoval úpravami v rámci bakalářské práce \cite{flaska}. Cílem tohoto výzkumného úkolu je opět posunout stav programu o kus vpřed a to především v jeho spolehlivosti: tak aby aplikace nepadala při běhu. Dále ak naprogramovat nové funkce, dle přání konzultanta ze strany IKEM (Institut klinické a experimentální medicíny v Praze).
+Tématem tohoto výzkumného úkolu je vývoj prohlížeče snímků na magnetickou rezonanci. Vývoj prohlížeče byl započat Bc. Neškudlou v rámci jeho diplomové práce \cite{neskudla}. Vývoj posléze pokračoval úpravami v rámci bakalářské práce \cite{flaska}. Cílem tohoto výzkumného úkolu je opět posunout stav programu o kus vpřed a to především v jeho spolehlivosti: tak aby aplikace nepadala při běhu. Dále pak bylo úkolemn naprogramovat nové funkce dle přání konzultanta ze strany IKEM (Institut klinické a experimentální medicíny v Praze).
 
-\section{O prohlížeči}
-
-
-\section{Zadání výzkumného úkolu}
+\chapter{Cíl práce}
 Zadání tohoto výzkumného úkolu bylo shrnuto ve třech bodech, které reflektují problémy, které se s programem objevily a dále potřeby jak program upravit.
 
 \begin{itemize}
@@ -14,14 +12,14 @@ Zadání tohoto výzkumného úkolu bylo shrnuto ve třech bodech, které reflek
 \end{itemize}
 
 \section{Zajištění bezchybného překladu aplikace}
-Vývojová verze programu DicomPresenter bohužel nešla spustit na jiných počítačích. V práci \cite{flaska} se autor zabýval překladem aplikace na OS Linux, což výrazně pomohlo k pročištění zdrojového kódu. Nicméně ve středisku IKEM je potřeba provozovat aplikaci na počítačích vybavených Windows. Z tohoto důvodu bylo nutné, v první fázi práce na tomto VÚ, obstarat takový překlad aplikace, aby aplikace byla spustitelná na většině počítačů. V tomto dokonale posloužil skript Cmake, který byl napsán pro překlad programu na OS Linux a to jako součást práce \cite{flaska}. Cmake je vyvíjen jakožto multiplatformní nástroj pro překlad programů a tak se také osvědčil. 
+Vývojová verze programu DicomPresenter bohužel nešla spustit na jiných počítačích, než na kterých byla programována. V práci \cite{flaska} se autor zabýval překladem aplikace na OS Linux, což výrazně pomohlo k pročištění zdrojového kódu. Nicméně ve středisku IKEM je potřeba provozovat aplikaci na počítačích vybavených Windows. Z tohoto důvodu bylo nutné, v první fázi práce na tomto VÚ, obstarat takový překlad aplikace, aby aplikace byla spustitelná na většině počítačů. V tomto dokonale posloužil skript Cmake, který byl napsán pro překlad programu na OS Linux a to jako součást práce \cite{flaska}. Cmake je vyvíjen jakožto multiplatformní nástroj pro překlad programů a tak se také osvědčil. 
 
 Při překladu se dále objevily potíže, které vznikaly díky zapojení velkého počtu externích knihoven v programu, jednalo se o nekompatibilitu přeložených součástí programu - kód lze přeložit s různými verzemi standardních knihoven.
 
 Poznatky získané při výše popsané práci na DicomPresenteru byly shrnuty a popsány v druhé kapitole této práce.
 
 \section{Zjednodušení programu}
-Při zprovozňování DicomPresenteru na počítačích v IKEM a na počítačích s Windows obecně docházelo ke značným komplikacím plynoucím ze zapojení většího množství externích knihoven v programu. Problémy byly s nekompatibilitou Pixel Shaderu používajícího knihovnu Cg toolkit, problémy vznikaly při pokusech o překlad, kdy v programu byly navzájem nekompatibilně přeložené externí knihovny (viz předchozí bod) a nejhorším problémem s kompatibilitou byla nefunkčnost programu na počítačích se staršími grafickými kartami. Na základě těchto problémů byl ze strany školitele vznesen požadavak na studii toho, zda by bylo možné odstranit některé externí knihovny z programu, jmenovitě: Cg toolkit a v lepším případě i OpenGL.
+Při zprovozňování DicomPresenteru na počítačích v IKEM a na počítačích s Windows obecně docházelo ke značným komplikacím plynoucím ze zapojení většího množství externích knihoven v programu. Problémy byly s nekompatibilitou Pixel Shaderu používajícího knihovnu Cg toolkit, problémy vznikaly při pokusech o překlad, kdy v programu byly navzájem nekompatibilně přeložené externí knihovny (viz předchozí bod) a nejhorším problémem s kompatibilitou byla nefunkčnost programu na počítačích se staršími grafickými kartami. Na základě těchto problémů byl ze strany školitele vznesen požadavak na studii toho, zda by bylo možné odstranit některé externí knihovny z programu, jmenovitě: Cg toolkit, OpenGL, plib.
 
 Zapojení Cg toolkit v programu bylo učiněno na základě rozhodnutí autora v práci \cite{neskudla} a to z důvodu nedostatečné funkčnosti knihovny OpenGL pro implementaci změny jasu a kontrastu v programu. Knihovna OpenGL byla v programu využita k urychlení grafického výstupu a k zrychlení prováděných grafických operací.
 
@@ -29,11 +27,9 @@ Jak vyplívá z předchozích dvou odstavců, nutným požadavkem pro odstraněn
 
 \begin{itemize}
 \item Zjistit zda je možné realizovat grafické operace prováděné pomocí Cg toolkit pouze pomocí knihovny OpenGL.
-\item Zjistit, jaký by mělo případné odstranění knihovny OpenGL na grafický výkon programu.
+\item Zjistit, jaký by mělo případné odstranění knihovny OpenGL rychlost programu.
 \end{itemize}
 
-Tyto dvě otázky se stávají středobodem tohoto výzkumného úkolu. Výzkumný úkol by tak měl pomoci odpovědět na to, zda při vývoji dalších grafických aplikací je, či není nutné používat knihovny využívajících možností nejmodernějších grafických akcelerátorů.
 
 \section{Implementace nových funkcí}
 Vedle samotného výzkumu, který by měl být stěžejní součásti této práce, je dále důležité posunout vývoj DicomPresenteru o krok dál, aby se program přiblížil ke stavu, kdy jej bude možné denně používat. Součástí práce na tomto VÚ tak bylo programování samotné aplikace. Vedle již zmíněné migrace z vývojové fáze na běžné počítače, to byly hlavně dva stěžejní úkoly. V první řadě byla v programu implementována možnost multiplanární rekonstrukce třírozměrného nímku. Druhým větším úkolem pak bylo zjištění příčiny, proč se převážná většina volně dostupných Dicom snímků nechce v programu otevřít a odstranění této chyby. Užitečné zkušenosti, které byly získané při této práci, byly shrnuty v třetí kapitole této práce a měly by tak posloužit dalšímu studentovi, který se zapojí do vývoje DicomPresenteru, jako zdroj praktických poznatků.
-
