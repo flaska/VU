@@ -1,15 +1,13 @@
 \newpage
 \chapter{Odstranění knihoven Cg toolkit, OpenGL z programu}
-Program DicomPresenter stojí na knihovně OpenGL, používá jí k vykreslování grafického výstupu. Pomocí OpenGL jsou uloženy zobrazované snímky v paměti. Pomocí souřadnicového systému OpenGL pak vykresluje snímky na obrazovku. OpenGL tak slouží ke správě grafických dat a dále díky OpenGL má program nadprůměrně plynulý chod - rychlost vykreslování nad 100fps.
+DicomPresenter využívá knihovnu OpenGL. Pomocí OpenGL jsou uloženy  MRI snímky v paměti a dále jsou pomocí souřadnicového systému OpenGL vykreslovány na obrazovku. V programu byla dále použita knihovna Cg toolkit. Autor práce \cite{neskudla} obhajuje její použití tím, že v OpenGL se mu nedaří realizovat změnu jasu a kontrastu, a tak k tomuto používá Cg toolkit.
 
-V programu byla dále použita knihovna Cg toolkit. Autor práce \cite{neskudla} obhajuje její použití tím, že v OpenGL se mu nedaří realizovat změnu jasu a kontrastu, a tak k tomuto používá Cg toolkit.
+Tato kapitola má za cíl odpovědět na otázku, zda by bylo možné z programu odstranit knihovny OpenGL a Cg toolkit a dále, jaký dopad by to mělo na chod programu. V první části kapitoly je vysvětleno, co je to změna jasu a kontrastu. OpenGL, ani Cg toolkit nenabízejí pro změnu kontrastu předem naprogramované funkce a tak je třeba toto realizovat vlastním kódem. V druhé části kapitoly je pak popsáno, jak byla odhadnuta plynulost ve vykreslování v DicomPresenteru po případném odstranění OpenGL a Cg toolkit.
 
-Tato kapitola má za cíl odpovědět na otázku, zda by bylo možné z programu odstranit knihovny OpenGL a Cg toolkit a dále, jaký dopad by to mělo na chod programu. V první části kapitoly autor práce vysvětluje, co je to změna jasu a kontrastu. OpenGL, ani Cg toolkit nenabízejí pro změnu kontrastu předem naprogramované funkce a tak je třeba toto realizovat vlastním kódem. V druhé části kapitoly je pak popsáno, jak byl testován výkon počítače při dílčích úlohách řešených bez použití a s použitím OpenGL. Jednou úlohou je změna kontrastu, druhou úlohou je posunování snímku po obrazovce. Obě tyto úlohy vyplívají z funkčnosti programu DicomPresenter. Změna kontrastu i posunování snímků jsou v DicomPresenteru řešeny real-time, tzn. program okamžitě reaguje na akce uživatele. Pro to, aby bylo možné odstranit knihovnu OpenGL z programu, musíme být schopni bez této knihovny realizovat obě úlohy alespoň 30x za sekundu. Pro odstranění knihovny Cg toolkit z programu musíme být schopni realizovat změnu jasu a kontrastu v OpenGL (případně pak i v C++ bez využití OpenGL).
+% Změna kontrastu i posunování snímků jsou v DicomPresenteru řešeny real-time, tzn. program okamžitě reaguje na akce uživatele. Pro to, aby bylo možné odstranit knihovnu OpenGL z programu, musíme být schopni bez této knihovny realizovat obě úlohy alespoň 30x za sekundu. Pro odstranění knihovny Cg toolkit z programu musíme být schopni realizovat změnu jasu a kontrastu v OpenGL (případně pak i v C++ bez využití OpenGL).
 
 \subsection{Jas  a kontrast}
-Pro to abychom mohli programovat změnu kontrastu v OpenGL, Cg, nebo C++ musíme vědět o jaké matematické operace s pixely snímku se jedná. Popsat změnu kontrastu matematicky si klade za cíl první část této kapitoly.
-
- V našem případě se můžeme omezit jen na černobílé snímky, protože výstupem MRI jsou pouze černobílé snímky. Obrázek tedy můžeme chápat jako matici čísel mezi $0$ a $1$, kde sloupce, respektive řádky odpovídají souřadnicím bodu v obrázku:
+Na začátku kapitoly si nejprve definujme, co jsou to jas a kontrast. V našem případě se můžeme omezit jen na černobílé snímky, protože výstupem MRI jsou pouze černobílé snímky. Obrázek tedy můžeme chápat jako matici čísel mezi $0$ a $1$, kde sloupce, respektive řádky odpovídají souřadnicím bodu v obrázku:
 
 $
  Im_{res_{x},res_{y}} =
@@ -23,14 +21,12 @@ $, $ Im(x,y) \in [0,1] $
 
 Pro $ Im(x,y) = 0 $ vidíme pixel naprosto černý, pro $ Im(x,y) = 1 $ vidíme pixel bílý.
 
-Jas a kontrast lze pak definovat\cite{wikipediaContrast}:
+Jas a kontrast lze pak definovat\footnote{Jas je aritmetický průměr intenzit všech pixelů v obrázku. Kontrast snímku je roven směrodatné odchylce intenzit od jejich průměru.}\cite{wikipediaContrast}:
 
 
 $Brightness(Im) = \frac{1}{res_{x} \cdot res_{y}}\sum_{\substack{0 \leq x \leq res_{x} \\ 0 \leq y \leq res_{y}}} Im(x,y)$
 
 $Contrast(Im) = \sqrt{\frac{1}{res_{x} \cdot res_{y}}\sum_{\substack{ 0 \leq x \leq res_{x} \\ 0 \leq y \leq res_{y} }}(Im_{x,y}-Brightness(Im))^2}$
-
-Jak vidíme ze vzorečků: ten pro jas nápadně připomíná výpočet střední hodnoty; vzoreček pro kontrast pak připomíná výpočet rozptylu.
 
 Pro změnu jasu a kontrastu snímku se pak v počítačových programech používají následující dvě funkce:
 
@@ -38,16 +34,16 @@ $ Im(x,y) \longmapsto Im(x,y) + c_{brightness} $ \\
 \indent$ Im(x,y) \longmapsto   (Im(x,y) - 0.5) \cdot c_{contrast} + 0.5 $ \\
 \indent kde hodnoty větší než 1 jsou zarovnány na 1 a hodnoty menší než 0 jsou zarovnány na 0.
 
-Bohužel při těchto transformacích dochází ke ztrátě informace v nejsvětlejších a nejtmavších místech obrázku. To se dá řešit použitím složítějších funkcí pro transformace. V tabulce\ref{kontrast} vidíme porovnání lineární a nelineární změny kontrastu.
+Bohužel při těchto transformacích dochází ke ztrátě informace v nejsvětlejších a nejtmavších místech obrázku. To se dá řešit použitím složítějších (nelineárních) funkcí pro transformace. V tabulce \ref{kontrast} vidíme grafy lineární a nelineární transformace pro změnu kontrastu.
 
 \noindent
 \begin{table}[ht]
-	\label{kontrast}
+	%\label{kontrast}
 	\centering
 		\begin{tabular}{p{0.44\textwidth}p{0.44\textwidth}}
-			\includegraphics[width=0.4\textwidth,height=0.4\textwidth]{Text/IMG/Kontrast_Transformace_1.jpg}
+			\includegraphics[width=0.3\textwidth,height=0.3\textwidth]{Text/IMG/Kontrast_Transformace_1.jpg}
 		&
-			\includegraphics[width=0.4\textwidth,height=0.4\textwidth]{Text/IMG/Kontrast_Transformace_2.jpg}
+			\includegraphics[width=0.3\textwidth,height=0.3\textwidth]{Text/IMG/Kontrast_Transformace_2.jpg}
 		\end{tabular}
 	\caption{Změna kontrastu pomocí lineární (vlevo) a nelineární (vpravo) transformace. V prvním případě dochází a ve druhém nedochází ke ztrátě informace.}
 \end{table}
@@ -57,7 +53,7 @@ Bohužel při těchto transformacích dochází ke ztrátě informace v nejsvět
 \subsection{Kontrast nelineárním způsobem}
 S využitím jazyka Cg (případně C++ při odstranění OpenGL) lze implementovat nelineární změnu kontrastu zachovávající všechny informace v obrázku. V následující stati najdeme jednu z možných funkcí pro tuto transformaci.
 
-Cílem je najít matematickou funkci, jež se svým grafem blíží grafu v tabulce \ref{kontrast} vrpavo. Podobný průběh má funkce $tanh(c\cdot x)$ na intervalu $(-\infty,\infty)$, kde parametr $c$ určuje derivaci v bodě $0$.
+Cílem je najít matematickou funkci, jež se svým grafem blíží grafu v tabulce \ref{kontrast} vpravo. Podobný průběh má funkce $tanh(c\cdot x)$ na intervalu $(-\infty,\infty)$, kde $c$ je parametr určující sklon křivky v bodě $0$. Funkce, kterou lze použít pro nelineární změnu kontrastu, musí navíc vyhovovat podmínkám: $f(\frac{1}{2})=\frac{1}{2}$, $f(0)=0$, $f(1)=1$. Odvoďme si přesný tvar takové funkce:
 
 Graf funkce posuneme do bodu  $[\frac{1}{2},\frac{1}{2}]$:
 
@@ -71,7 +67,7 @@ Omezíme obor hodnot na interval: $[0,1]$:
 f(x) = \frac{1}{2}\cdot tanh(2\cdot c\cdot(x-\frac{1}{2})) + \frac{1}{2}
 \end{equation}
 
-Graf funkce \ref{tanh1} neprochází body $[0,0]$, $[1,1]$. Proto přičteme k funkci jednoduchou lineární funkci:
+Graf funkce \ref{tanh1} neprochází body $[0,0]$, $[1,1]$, to lze řešit různými úpravami. My přičteme k funkci \ref{tanh} lineární funkci, která bude sloužit jako korekce:
 
 \begin{equation}
 f(x) = k\cdot(x-\frac{1}{2}) + \frac{1}{2}\cdot tanh(2\cdot c\cdot(x-\frac{1}{2})) + \frac{1}{2}
@@ -89,7 +85,7 @@ Dosazením dostáváme výsledný tvar funkce:
 \framebox{ $f(x) = (1 - tanh(c))\cdot(x-\frac{1}{2}) + \frac{1}{2}\cdot tanh(2 \cdot c\cdot(x-\frac{1}{2})) + \frac{1}{2} $ }
 \end{center}
 
-V tabulce \ref{kontrast} vidíme graf pro c=1 a c=2.
+V tabulce \ref{kontrast} vidíme grafy nalezené funkce pro parametry $c=1$ a $c=2$.
 
 
 \noindent
@@ -116,11 +112,11 @@ Pro realizaci jednoduchých barevných transformací snímku disponuje knihovna 
 
 Transformační křivky obou funkcí vidíme v tabulce \ref{biasscale}. Funkce Bias odpovídá změně jasu snímku. Změnu kontrastu musíme realizovat pomocí volání obou funkcí se správně dopočítanými parametry.
 
-Pro změnu kontrastu voláme nejdřív funkci Scale s parametrem $s$, pak funkci Bias s parametrem $b$. Výsledek odpovídá transformaci:
+Pro změnu kontrastu voláme nejdřív funkci Scale s parametrem $s$, pak funkci Bias s parametrem $b$. Výsledek odpovídá lineární transformaci:
  
 \framebox{ $ y = s \cdot x + b$ }
 
-Vztah mezi parametry $b$ a $s$ takový, aby transformační křivka procházela bodem [0.5,0.5], je:
+Vztah mezi parametry $b$ a $s$ takový, aby transformační křivka procházela bodem $[0.5,0.5]$, je:
 
 \framebox{ $b=\frac{1}{2}\cdot(1-s)$ }
 
@@ -136,43 +132,19 @@ Vztah mezi parametry $b$ a $s$ takový, aby transformační křivka procházela 
 	\caption{Křivka transformací Bias (vlevo) a Scale (vpravo). Jejich správnou kombinací lze dosáhnout změny kontrastu.}
 \end{table}
 
-<< neskudla >>
-
-
-
-
-\begin{comment}
-\subsection{Kontrast v knihovně Cg toolkit}
-Knihovna Cg toolkit nabízí oproti OpenGL programování výpočtů s barevnými složkami. Pomocí funkce tex2D si zjistíme barevné složky původního pixelu, s nimi pak můžeme provádět libovolné operace a výsledek pak uložit do výstupu.
-\subsection{Kontrast lineární transformací}
-Knihovna Cg opět nedisponuje funkcí pro změnu kontrastu, ale podobně jako v předchozím případě si můžeme změnu kontrastu naprogramovat sami - v tomto případě mnohem přehlednějším způsobem. Násobme barevné hodnoty pixelu koeficientem a přičtěme adekvátní konstantu. To v Cg zapíšeme takto:
-\begin{lstlisting}[label=DicomImageClass,caption={...}]
-C3E3f_Output main(float2 texCoord : TEXCOORD0, uniform sampler2D decal : TEX0, uniform float brightness){
-  C3E3f_Output OUT;
-  OUT.color = tex2D(decal,texCoord)*scale + bias;
-  return OUT;
-}
-\end{lstlisting}
-Ve srovnání s OpenGL je tato implementace výrazně přehlednější. Podíváme-li se na řádek 3, vidíme hned zápis transformační funkce ve tvaru: f(x) = k*x - z. 
-Změna jasu pak bude provedena přičtením konstanty bez násobení: \clist{OUT.color = tex2D(decal,texCoord)*scale}.
-\end{comment}
-
-
-
-
-
 \section{Rychlost vykreslování}
-Jednou z otázek na kterou se snaží najít odpověď tento VÚ je to, zda by bylo možné z programu odstranit knihovny OpenGL a Cg toolkit. Jedná se o knihovny zajišťující práci s grafickými daty, hlavně se pak jedná o knihovnu výrazně urychlující zobrazování grafických dat. Před odstraněním knihoven z programu musíme nejprve zjistit, zda bude možné realizovat zobrazování dodstatečně rychle i bez těchto knihoven. 
+Jednou z otázek na kterou se snaží najít odpověď tento VÚ je to, zda by bylo možné z programu odstranit knihovny OpenGL a Cg toolkit. Jedná se o knihovny zajišťující práci s grafickými daty, hlavně se pak jedná o knihovny výrazně urychlující zobrazování grafických dat. Před odstraněním knihoven z programu musíme nejprve zjistit, zda bude možné realizovat zobrazování dodstatečně rychle i bez těchto knihoven. 
 
-Při vývoji DicomPresenteru byl kladen důraz na dostatečně plynulé ovládání. Pro práci s jakoukoliv aplikací je pohodlné, je-li mezi uživatelskou akcí a její realizací co nejkratší prodleva. V DicomPresenteru jsou výpočetně nejnáročnejčí akce: přesouvání snímků po obrazovce, úprava jasu a kontrastu snímků. Průměrný počet vykreslených snímků za sekundu při těchto akcích je při využití OpenGL 90 fps. Odhad toho, jak rychle poběží program bez OpenGL a Cg toolkit můžeme udělat tak, že naprogramujeme dvě aplikace, které budou mít na starosti pouze dvě zmiňované akce (posun snímku, změnu kontrastu). Jeden program bude využívat knihovny, druhý ne. Výkon testovacích aplikací a DicomPresenteru se bude jistě značně lišit\footnote{Rozdíl v rychlosti vykreslování u DicomPresenteru a testovacích aplikací je způsoben tím, že DicomPresenter vedle vykreslování dat na obrazovku musí řešit další úlohy: zachytávání uživatelských akcí, předávání uživatelských akcí napříč objektovým modelem, vykreslování ovladacích prvků, vykreslování textů.}, ale z naměřených hodnot lze odhadnout, jak rychle poběží DicomPresenter bez OpenGL a Cg toolkit. Uvažujme nyní pouze jednu z úloh: označme si $fps_{lib}$ počet naměřených snímků za sekundu v aplikaci využívající knihovny, $fps_{software}$ počet naměřených fps v aplikaci nevyužívající grafické knihovny, $fps_{dp}$ nechť je průměrný počet snímků kterého dosahuje DicomPresenter. Pak spodní odhad\footnote{Vykreslování na obrazovku je jen část úloh, které DicomPresenter řeší v každém kroku. Zpomalíme-li tuto část n-krát, bude pak běh programu v nejhorším případě n-krát pomalejší.} průměrného počtu snímků, kterého bude dosahovat DicomPresenter bez OpenGL a Cg toolkit v dané úloze je:
+Při vývoji DicomPresenteru byl kladen důraz na dostatečně plynulé ovládání. Pro práci s jakoukoliv aplikací je pohodlné, je-li mezi uživatelskou akcí a její realizací co nejkratší prodleva. V DicomPresenteru jsou výpočetně nejnáročnejčí akce: přesouvání snímků po obrazovce, úprava jasu a kontrastu snímků. Průměrný počet vykreslených snímků za sekundu při těchto akcích je při využití OpenGL 90 fps. Odhad toho, jak rychle poběží program bez OpenGL a Cg toolkit můžeme udělat tak, že naprogramujeme dvě aplikace, které budou mít na starosti pouze dvě zmiňované akce (posun snímku, změnu kontrastu). Jeden program bude využívat knihovny, druhý ne. Výkon testovacích aplikací a DicomPresenteru se bude značně lišit\footnote{Rozdíl v rychlosti vykreslování u DicomPresenteru a testovacích aplikací je způsoben tím, že DicomPresenter vedle vykreslování dat na obrazovku musí řešit další úlohy: zachytávání uživatelských akcí, předávání uživatelských akcí napříč objektovým modelem, vykreslování ovladacích prvků, vykreslování textů.}, ale z naměřených hodnot lze odhadnout, jak rychle poběží DicomPresenter bez OpenGL a Cg toolkit. Uvažujme nyní pouze jednu z úloh: označme si $fps_{lib}$ počet naměřených snímků za sekundu v aplikaci využívající knihovny, $fps_{software}$ počet naměřených fps v aplikaci nevyužívající grafické knihovny, $fps_{dp}$ nechť je průměrný počet snímků kterého dosahuje DicomPresenter. Pak spodní\footnote{Vykreslování na obrazovku je jen část úloh, které DicomPresenter řeší v každém kroku. Zpomalíme-li tuto část n-krát, bude pak běh programu v nejhorším případě n-krát pomalejší.} odhad průměrného počtu snímků, kterého bude dosahovat DicomPresenter bez OpenGL a Cg toolkit v dané úloze je:
 
-\begin{equation}
+\begin{equation} \label{estimate}
 fps_{odhad} = \frac{fps_{software}}{fps_{lib}} \cdot fps_{dp}
 \end{equation}
 
 \subsection{Změna kontrastu bez Cg toolkit}
+Při programování změny kontrastu bez knihovny Cg toolkit se opíráme pouze o knihovnu Qt. Snímek máme v počítači uložen jako objekt třídy \clist{QImage}. Pro vyšší výkon nepoužíváme funkce knihovny Qt určené pro barevné transformace pixelů, ale měníme data přímo v paměti počítače pomocí pointerů. Díky těmto optimalizacím lze dosáhnout přibližně čtyřnásobného zvýšení výkonu.
 
-\begin{lstlisting}[label=DicomImageClass,caption={...}]
+\begin{lstlisting}[label=DicomImageClass,caption={Změna kontrastu bez použití knihovny Cg toolkit.}]
 for (int y = 0; y<h; y++){
 	Rgb = (QRgb*)ShowImage.scanLine(y);
 	for ( int x = 0; x < w; x++ ){
@@ -183,49 +155,54 @@ for (int y = 0; y<h; y++){
 
 \subsection{Změna kontrastu v Cg toolkit}
 
-\begin{lstlisting}[label=DicomImageClass,caption={...}]
+Knihovna Cg toolkit slouží dodatečným úpravám obrazu na grafické kartě. Pomocí Cg toolkit neměníme data uložená v paměti, ale přepočítáváme barevné hodnoty pixelů na výstupu. Pomocí příkazů knihovny Cg toolkit stačí aktivovat pixel shader před kreslením v OpenGL. Cg toolkit se pak postará o to, že na všechny pixely výstupu bude aplikována transformace popsaná v jazyce Cg (viz kód \ref{cg} ).
+
+\begin{lstlisting}[label=cg,caption={Program v jazyce Cg pro změnu kontrastu snímku.}]
 C3E3f_Output main(float2 texCoord :TEXCOORD0, uniform sampler2D decal :TEX0, uniform float contrast){
   C3E3f_Output OUT;
-  OUT.color = tex2D(decal,texCoord)*contrast+0.5(1-contrast);
+  OUT.color = tex2D(decal,texCoord)*contrast+0.5*(1-contrast);
   return OUT;
 }
 \end{lstlisting}
 
 \subsection{Posun snímku bez OpenGL}
-\begin{lstlisting}
+V případě posunutí snímku bez OpenGL postupujeme podobně jako při změně kontrastu. V porovnání se změnou kontrastu máme ale v programu dva objekty typu QImage. Jeden reprezentuje pracovní plochu, druhý reprezentuje zobrazovaný snímek. Když chceme vykreslit snímek na obrazovku, nejprve vynulujeme všechna data v pracovní ploše a pak zkopírujeme data ze snímku na požadované místo na pracovní ploše.
+
+Podobně jako v prvním příkladě této kapitoly není možné pro tuto úlohu použít předem připravené fukce Qt knihovny, neboť je pak úloha násobně pomalejší.
+
+\begin{lstlisting}[caption={Funkce pro vykreslení snímku na zadanou pozici napsaná bez použití OpenGL.}]
 void Workspace::draw(QPoint leftTop, QImage *sourceImage){
-	int width = sourceImage->width();
-	int height = sourceImage->height();
-	int xPos = leftTop.x();
-	int yPos = leftTop.y();
 	for ( int y = 0; y < this->height(); y++ ){
 		QRgb *workspaceImageLinePtr = (QRgb*)this->scanLine(y);
 		for ( int x = 0; x < this->width(); x++ ){
 			workspaceImageLinePtr[x] = qRgb(0,0,0);
 		}
 	}
-	for ( int y = 0; y < height; y++ ){
+	for ( int y = 0; y < sourceImage->height(); y++ ){
 		QRgb *sourceImageLinePtr = (QRgb*)sourceImage->scanLine(y);
-		QRgb *workspaceImageLinePtr = (QRgb*)this->scanLine(yPos + y);
-		for ( int x = 0; x < width; x++ ){
-			workspaceImageLinePtr[xPos + x] = qRgb(qRed(sourceImageLinePtr[x]),qGreen(sourceImageLinePtr[x]),qBlue(sourceImageLinePtr[x]));
+		QRgb *workspaceImageLinePtr = (QRgb*)this->scanLine(leftTop.y() + y);
+		for ( int x = 0; x < sourceImage->width(); x++ ){
+			workspaceImageLinePtr[leftTop.x() + x] = qRgb(qRed(sourceImageLinePtr[x]),qGreen(sourceImageLinePtr[x]),qBlue(sourceImageLinePtr[x]));
 		}
 	}
 }
 \end{lstlisting}
 
+
 \subsection{Posun snímku s OpenGL}
 
-\begin{lstlisting}
+Realizovat posunutí snímku pomocí OpenGL je výrazně jednodušší. Pomocí přibližně desítky příkazů OpenGL popíšeme co a kam chceme zobrazit. OpenGL za nás pak řeší např. otazky přepočítávání rozměrů při zvětšení a zmenšení okna.
+
+\begin{lstlisting}[caption={Funkce pro vykreslení snímku využívající OpenGL.}]
 void GLPainter::Paint(int translationX){
 	glClear(GL_COLOR_BUFFER_BIT);
 	float ratio = (float)translationX/im->width().;
 	glBegin(GL_POLYGON);
 		glColor3f (Brightness, Brightness, Brightness);
-		glTexCoord3f(0.0,0.0,0.0);	glVertex3f(ratio+ -1.0, -1.0, 0.0 );
-		glTexCoord3f(0.0,1.0,0.0);	glVertex3f(ratio+ -1.0,  1.0, 0.0 );
-		glTexCoord3f(1.0,1.0,0.0);	glVertex3f(ratio+  0.0,  1.0, 0.0 );
-		glTexCoord3f(1.0,0.0,0.0);	glVertex3f(ratio+  0.0, -1.0, 0.0 );
+		glTexCoord3f(0.,0.,0.);	glVertex2f(ratio+ -1.,-1.);
+		glTexCoord3f(0.,1.,0.);	glVertex2f(ratio+ -1., 1.);
+		glTexCoord3f(1.,1.,0.);	glVertex2f(ratio+  0., 1.);
+		glTexCoord3f(1.,0.,0.);	glVertex2f(ratio+  0.,-1.);
 	glEnd();
 }
 \end{lstlisting}
@@ -233,8 +210,32 @@ void GLPainter::Paint(int translationX){
 
 
 
+\section{Naměřené hodnoty}
+
+Výsledky získane z testovacích aplikací jsou vidět v tabulce \ref{vysledky}. Daná úloha je vždy pomocí knihoven OpenGL, respektive Cg řešena přibližně šestkrát rychleji. Použijeme-li vzoreček \ref{estimate}, pak lze spočítat, že změna kontrastu by v hotové aplikaci měla probíhat s rychlostí nejméně 13ti snímků za sekundu a posun snímku by měl běžet nejhůře s 18ti snímky za sekundu. Dále si můžeme všimnout nepoměru v naměřených hodnotách u změny kontrastu a posunu snímku v testovacím programu využívající OpenGL a Cg toolkit (2:1). Pokud tento fakt konfrontujeme s tím, že v DicomPresenteru běželi obě operace s podobným počtem fps (80 respektive 90 fps), je jasné, že vykreslování na obrazovku určitě nebude limitujícím faktorem ve výkonu DicomPresenteru. Proto lze usuzovat, že skutečný pokles fps po implementaci obou úloh bez OpenGL se nebude blížit spodním odhadům. V nejhorším možném případě, kdyby počet fps při kreslení změny kontrastu klesl na 13fps, je pořád rychlost vykreslování dostačující pro použití.
 
 
+\noindent
+\begin{table}[ht]
+  \label{vysledky}
+	\centering
+\begin{tabular}{| p{5cm} | l | l | l | }
+
+  \hline                       
+  Úloha & Požité knihovny & Snímků za vteřinu \\
+  \hline
+  \hline
+  Změna kontrastu & Qt &  90 fps\\
+  \hline
+  Změna kontrastu & Qt, OpenGL, Cg & 600 fps\\
+  \hline
+  Posun snímku & Qt & 50  fps \\
+  \hline
+  Posun snímku  & Qt, OpenGL & 250 fps \\
+  \hline  
+\end{tabular}
+	\caption{Počty snímků za sekundu, kterých bylo dosaženo v testovacích aplikacích.}
+\end{table}
 
 
 
