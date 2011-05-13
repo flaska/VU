@@ -1,35 +1,9 @@
 \chapter{Úvod}
 \vspace{-10mm}
-Tématem tohoto výzkumného úkolu je vývoj prohlížeče snímků na magnetickou rezonanci. Vývoj prohlížeče byl započat Bc. Neškudlou v rámci jeho diplomové práce \cite{neskudla}. Vývoj posléze pokračoval úpravami v rámci bakalářské práce \cite{flaska}. Cílem tohoto výzkumného úkolu je opět posunout stav programu o kus vpřed a to především v jeho spolehlivosti: tak aby aplikace nepadala při běhu. Dále pak bylo úkolemn naprogramovat nové funkce dle přání konzultanta ze strany IKEM (Institut klinické a experimentální medicíny v Praze).
+Tento výzkumný úkol si klade za cíl pokračování ve vývoji prohlížeče snímků pro Institut Klinické a Experimentální Medicíny. Jedná se o prohlížeč snímků pořízených na přístroji magnetické resonance. Vývoj programu byl započat v práci \cite{neskudla}, která si kladla za cíl objevit postupy pro programování prohlížeče. Při vývoji programu byl kladen vysoký důraz na jeho plynulý provoz. Pro vývoj byl vybrán jazyk C++ a pro zobrazování dat byla použita knihovna OpenGL. Zmiňovaná práce hledala zejména odpověď na otázku, zda je možné využít možností moderních grafických karet pro provoz prohlížeče. V dalším textu se budeme držet označeni pro program: DicomPresenter.
 
-\chapter{Cíl práce}
-Zadání tohoto výzkumného úkolu bylo shrnuto ve třech bodech, které reflektují problémy, které se s programem objevily a dále potřeby jak program upravit.
+Tato práce řešila dvě úlohy. V první řadě je to pokračování ve vývoji DicomPresenteru. Při pokusu o zprovoznění testovací verze DicomPresenteru na dalších počítačích se začaly oběvovat různé chyby v kódu. V této práci byly nalezené chyby odstraněny a dále bylo vždy zanalyzováno a popsáno řešení problému pro budoucí vývoj. Do programu byla dále přidána nová funkce pro zobrazování snímků.
 
-\begin{itemize}
-\item Zajistěte bezchybný překlad a běh aplikace a její instalaci na počítačích ve středisku IKEM.
-\item Prozkoumejte možnosti zjednodušení struktury programu (odstranění závislosti na některých knihovnách) za účelem dosažení snadné přenositelnosti.
-\item V návaznosti na konzultace s kolegy v IKEM implementujte nové funkce podle jejich potřeb.
-\end{itemize}
-
-\section{Zajištění bezchybného překladu aplikace}
-Vývojová verze programu DicomPresenter bohužel nešla spustit na jiných počítačích, než na kterých byla programována. V práci \cite{flaska} se autor zabýval překladem aplikace na OS Linux, což výrazně pomohlo k pročištění zdrojového kódu. Nicméně ve středisku IKEM je potřeba provozovat aplikaci na počítačích vybavených Windows. Z tohoto důvodu bylo nutné, v první fázi práce na tomto VÚ, obstarat takový překlad aplikace, aby aplikace byla spustitelná na většině počítačů. V tomto dokonale posloužil skript Cmake, který byl napsán pro překlad programu na OS Linux a to jako součást práce \cite{flaska}. Cmake je vyvíjen jakožto multiplatformní nástroj pro překlad programů a tak se také osvědčil. 
-
-Při překladu se dále objevily potíže, které vznikaly díky zapojení velkého počtu externích knihoven v programu, jednalo se o nekompatibilitu přeložených součástí programu - kód lze přeložit s různými verzemi standardních knihoven.
-
-Poznatky získané při výše popsané práci na DicomPresenteru byly shrnuty a popsány v druhé kapitole této práce.
-
-\section{Zjednodušení programu}
-Při zprovozňování DicomPresenteru na počítačích v IKEM a na počítačích s Windows obecně docházelo ke značným komplikacím plynoucím ze zapojení většího množství externích knihoven v programu. Problémy byly s nekompatibilitou Pixel Shaderu používajícího knihovnu Cg toolkit, problémy vznikaly při pokusech o překlad, kdy v programu byly navzájem nekompatibilně přeložené externí knihovny (viz předchozí bod) a nejhorším problémem s kompatibilitou byla nefunkčnost programu na počítačích se staršími grafickými kartami. Na základě těchto problémů byl ze strany školitele vznesen požadavak na studii toho, zda by bylo možné odstranit některé externí knihovny z programu, jmenovitě: Cg toolkit, OpenGL, plib.
-
-Zapojení Cg toolkit v programu bylo učiněno na základě rozhodnutí autora v práci \cite{neskudla} a to z důvodu nedostatečné funkčnosti knihovny OpenGL pro implementaci změny jasu a kontrastu v programu. Knihovna OpenGL byla v programu využita k urychlení grafického výstupu a k zrychlení prováděných grafických operací.
-
-Jak vyplívá z předchozích dvou odstavců, nutným požadavkem pro odstranění nadbytečných knihoven z kódu programu tak bylo:
-
-\begin{itemize}
-\item Zjistit zda je možné realizovat grafické operace prováděné pomocí Cg toolkit pouze pomocí knihovny OpenGL.
-\item Zjistit, jaký by mělo případné odstranění knihovny OpenGL rychlost programu.
-\end{itemize}
+Tento VÚ navazuje na práci \cite{neskudla} i v teoretické rovině, ale jde zcela odlišnou cestou. V tomto VÚ se snažíme odpovědět na otázku, jak výrazný bude pokles plynulosti běhu programu po odstranění OpenGL. Při zprovozňování DicomPresenteru na dalších počítačích opakovaně vznikal problém s nekompatibilitou grafické karty s rozšířeními OpenGL, jež DicomPresenter používá. Z tohoto důvodu se zajímáme o to, jaký dopad na program by mělo odstranění OpenGL: Na základě toho rozhodneme, zda je cena za odstranění OpenGL příliš vysoká a proto bude knihovna v programu zachována, nebo naopak bude lepší jí odstranit.
 
 
-\section{Implementace nových funkcí}
-Vedle samotného výzkumu, který by měl být stěžejní součásti této práce, je dále důležité posunout vývoj DicomPresenteru o krok dál, aby se program přiblížil ke stavu, kdy jej bude možné denně používat. Součástí práce na tomto VÚ tak bylo programování samotné aplikace. Vedle již zmíněné migrace z vývojové fáze na běžné počítače, to byly hlavně dva stěžejní úkoly. V první řadě byla v programu implementována možnost multiplanární rekonstrukce třírozměrného nímku. Druhým větším úkolem pak bylo zjištění příčiny, proč se převážná většina volně dostupných Dicom snímků nechce v programu otevřít a odstranění této chyby. Užitečné zkušenosti, které byly získané při této práci, byly shrnuty v třetí kapitole této práce a měly by tak posloužit dalšímu studentovi, který se zapojí do vývoje DicomPresenteru, jako zdroj praktických poznatků.

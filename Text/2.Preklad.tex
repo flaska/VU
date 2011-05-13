@@ -1,37 +1,24 @@
 \newpage
 \chapter{Konfigurace pro překlad}
 \label{sec:preklad}
-Program Dicom-Presenter je závislý na více než pěti externích knihovnách. Překlad programu se tak stává mírně komplikovaný. Při překladu programu je potřeba obstarat přeložené verze všech knihoven. Knihovny Qt, OpenGL, Cg jsou od výrobce vždy k dispozici pro různé typy OS včetně OS Windows. Situace se zbylými knihovnami je výrazně horší. Knihovny dcmtk a plib je vždy nutné nejprve zkompilovat. Při překladu je pak nutné si vybrat způsob přeložení podle následujících možností: Single-Thread nebo Multi-Thread, Static linking nebo Dynamic linking, realease nebo debug. Konfigurace překladu by měla být pro všechny dílčí knihovny i pro samotnou aplikaci totožná. To může být problém, neboť například výrobce knihovny dcmtk dokládá, že není vhodné jí přeložit jako dynamickou .dll. Výrobce Qt knihovny zas svou knohovnu dodává pouze jako .dll. Tím vznikají značné komplikace. Tato kapitola popíše základní problematiku konfigurací překladu.
+Program Dicom-Presenter využívá celkem šest externích knihoven. Překlad programu se tak stává komplikovaný. Při překladu programu je potřeba obstarat všechny knihovny ve zkompilované podobě. Některé knihovny lze stáhnout jako přeložené, některé si programátor musí přeložit sám.
 
-\subsection{Microsoft Visual C++ Runtime}
-Důvodem, proč všechny součásti programu musí být přeloženy ve stejné konfiguraci je to, že při překladu v prostředí Visual Studio je při každé dílčí konfiguraci k programu přiložena specifická verze knihovny C++ Runtime.
+Při sestavování DicomPresenteru pro použití v IKEM se objevila chybová hláška:
 
-V knihovně C++ Runtime jsou obsaženy základní funkce C++. Při překladu je C++ Runtime vždy linkována k aplikaci. Programátorovi tedy stačí vždy jen odkázat na požadovaný hlavičkový soubor s potřebnou funkcí, např. \clist{\#include <stdio.h>}.
+\clist{error LNK2005: <funkce> already defined in msvcprt.lib(MSVCP90.dll)}
 
-Zmiňme jen orientačně jaké součásti můžeme v C++ Runtime nalézt:
+Na MSDN\footnote{Microsoft Developer Network\cite{msdn}} lze dohledat, že přesně tato chybová hláška je zapříčiněna kombinováním různých, navzájem nekompatibilních, tzv. konfigurací pro překlad.
 
-\hspace{-0.5cm}
-\begin{tabular}{| p {2cm}| l | p{6cm}| }
-  \hline                       
-  Název hlavičkového souboru & Příklad funkcí & Popis funkcí \\
-  \hline
-  \hline
-  stdio.h & printf, getchar, fwrite, fread & Práce s vstupem a výstupem aplikace (standartní I/O i soubory). \\
-  \hline  
-  stdlib.h & malloc, free, atof, div & Práce s pamětí (alokace paměti, uvolnění paměti), přetypování proměnných aj.  \\
-  \hline  
-  math.h & sin, cos, exp & Knihovna s elementárními matematickými funkcemi.  \\
-  \hline  
-  time.h & tm\_sec, tm\_hour & Knihovna pro získání informací o aktuálním čase, všechny funkce vrací typ int.  \\
-  \hline  
-\end{tabular}
+Konfigurace se v tomto případě odlišují podle toho, zda je kód překládán jako statická nebo dynamická knihovna, zda je překládán s podporou více vláken a zda je přeložen v debug nebo release verzi. Šest různých konfigurací, které je kvůli této chybové hlášce potřeba rozlišovat, je možno vidět v tabulkách \ref{table:konfigurace1}, \ref{table:konfigurace2}.
 
-Při překladu je tedy nutné hledět na to, aby ke všem součástem byla přiložena stejná verze C++ Runtime knihovny a nekřížit např. MSVCRT.lib s LIBC.lib (viz konec této kapitoly).
+Důvodem, proč je potřeba uvedené konfigurace rozlišovat je to, že v každé z konfigurací je k programu přikládána jiná verze standardní C++ knihovny (C++ runtime). Různé verze standardní knihovny popisují stále stejné funkce. Přeložíme-li dvě části programu s různými standardními knihovnami, nemůžeme pak tyto části programu spojit do spustitelného souboru. Neboť v každé části programu jsou stejné funkce definovány jinak. Kompilátor hlásí chybu: already defined.
 
-\subsection{Konfigurace překladu}
-Program, respektive jeho součásti je možné překládat celkově v těchto šesti různých konfiguracích:
+Standardní knihovna C++ obsahuje základní funkce, které se používají téměř ve všech programech: funkce pro práci s řetězci, funkce pro alokaci paměti, funkce pro textový výstup aplikace. V následujícím textu jsou rozebrány vlastnosti konfigurací.
 
-\hspace{-0.5cm}
+\begin{table}[ht]
+	\caption{Release onfigurace překladu, které je potřeba rozlišit kvůli standardní knihovně.}
+  \label{table:konfigurace1}
+	\centering
 \begin{tabular}{| l|| p{5cm} | p{5.5cm}  |}
   \hline                       
   Release & Single-Thread & Multi-Thread \\
@@ -43,7 +30,12 @@ Program, respektive jeho součásti je možné překládat celkově v těchto š
   \hline  
 \end{tabular}
 
-\hspace{-0.5cm}
+\end{table}
+
+\begin{table}[ht]
+	\caption{Debug konfigurace překladu, které je potřeba rozlišit kvůli standardní knihovně.}
+  \label{table:konfigurace2}
+	\centering
 \begin{tabular}{| l|| p{5cm} | p{5.5cm}  |}
   \hline                       
   Debug & Single-Thread & Multi-Thread \\
@@ -55,44 +47,35 @@ Program, respektive jeho součásti je možné překládat celkově v těchto š
   \hline  
 \end{tabular}
 
-Pro každou verzi překladu linkujeme jinou verzi C++ Runtime knihovny.
-Proberme si nyní rozdíly mezi konfiguracemi:
+\end{table}
 
-\subsection{Statické vs. dynamické knihovny}
-Při překladu dílčí části kódu si musíme vybrat, zda kód chceme kompilovat do statické nebo dynamické knihovny. Statické knihovny zpravidla končí příponou .lib (windows), případně .a (linux). Dynamické knihovny mají na Windows známou příponu .dll, na Unixových OS mají pak příponu .so (shared object). Bohužel, často je u OS Windows potřeba mít správnou verzi .dll knihovny. Verzi knihovny někdy lze vyčíst z názvu knihovny: např. \clist{msvcrt70.dll} a \clist{msvcrt71.dll}. V případě Unixových operačních systémů je situace značně přehlednější: verze knihovny se zpravidla píše na konec názvu souboru: např. \clist{libQtCore.so.4}, \clist{libQtCore.so.3}. Symbolickým linkem je pak vytvořen zástupce \clist{libQtCore.so}, který zpravidla ukazuje na nejnovější verzi knihovny. Pokud však nějaká aplikace potřebuje starši verzi knihovny, automaticky hledá název \clist{libQtCore.so.3}. Při instalaci novější verze knihovny: např. \clist{libQtCore.so.4.1} se pak změní symbolický link na nejnovější verzi, ale všechny starší verze mohou zůstat v programu zachovány. Systém knihoven je tak výrazně přehlednější.
+\section{Statické vs. dynamické knihovny}
+Při překladu dílčí části kódu si musíme vybrat, zda kód chceme kompilovat do statické nebo dynamické knihovny. Rozdíl je v přenositelnosti programu na jiné počítače a ve velikosti spustitelného souboru. Překládáme-li součásti programu jako dynamické knihovny, musíme pak přeložené soubory distribuovat spolu se spustitelným souborem. Pokdu přeložíme všechny části programu jako statické knihovny, linker po dokončení překladu spojí všechny statické knihovny do jednoho spustitelného souboru.
 
-DLL knihovny jsou zpravidla umístěny v adresáři \clist{Windows/system32}, dále bývají ponechány v adresáři programu, který je používá. Na Unixových OS jsou sdílené knihovny (\clist{.so}) umístěny v adresáři \clist{/usr/lib}. Zde je opět patrný značný rozdíl v systematičnosti obou operačních systémů. Zatímco na OS Windows jsou \clist{.dll} soubory umístěny v adresáři \clist{/system32}, na Unixových OS jsou \clist{.so} soubory přehledně rozděleny do podadresářů. Všechny \clist{.so} soubory knihovny Qt knihovny tak nalezneme v adresáři: \clist{/usr/lib/qt4}.
+Výhodou statického kompilování je snadná přenositelnost výsledného programu. Všechny používané součásti programu jsou linkovány uvnitř spustitelného souboru a nemůže se stát, že by na cílovém počítači nějaká knihovna scházela. Výhodou dynamického linkování je menší velikost spustitelného souboru a dále to, že knihovna je v paměti RAM jen jednou pro více aplikací, které jí sdílejí. V praxi u rozsahlých aplikací se proto hojně používá dynamické linkování.
 
-\subsection{Single-thread vs. Multi-thread}
+\section{Single-thread vs. Multi-thread}
 Při překladu je dále třeba si vybrat, zda má být aplikace přeložena s podporou více vláken. Připojení runtime knihovny s vícevláknovou podporou pak umožní používání příkazů k práci s vlákny.
 
-Vícevláknové programování se používá zejména u aplikací s grafickým rozhraním, kde je potřeba provést nějakou časově náročnější operaci, vedle toho je ale potřeba neostále obsluhovat grafické rozhraní. Dobrým příkladem je emailový klient: po stisknutí tlačítka odeslat začne odesílání emailu, tj. komunikace se serverem, přenášení dat atd. Během těchto akcí by uživatel u jednovláknové aplikace musel čekat, až vše doběhne do konce, rozdělíme-li odesílání mailu a chod GUI do dvou nezávislých vláken, může uživatel manipulovat s programem i během odesílání emailu.
+Vícevláknové programování se používá např. u aplikací s grafickým rozhraním, kde je potřeba provést nějakou časově náročnější operaci, vedle toho je ale potřeba neustále obsluhovat grafické rozhraní. Dobrým příkladem je emailový klient: po stisknutí tlačítka odeslat začne odesílání emailu, tj. komunikace se serverem, přenášení dat atd. Během těchto akcí by uživatel u jednovláknové aplikace musel čekat, až vše doběhne do konce. Rozdělíme-li odesílání mailu a chod GUI do dvou nezávislých vláken, může uživatel manipulovat s programem i během odesílání emailu.
 
-Bohužel používání více vláken je věc úzce spjatá s operačním systémem, pro OS Windows se používají funkce z hlavičkového souboru windows.h. Proto musíme při psaní aplikace, jejíž kód má být přenositelný mezi více operačními systémy použít nějakou knihovnu, která práci s vlákny obstará. Příkladem může být knihovna OpenMP. Práce s vlákny v OpenMP se pak obstarává použitím maker překladače. Další knihovnou, jež je portována pro OS Linux i Windows, je knihovna pthreads. Práce s vlákny v pthreads již bohužel není natolik zjednodušena jako v případě OpenMP. V pthreads musíme ručně vytvářet jednotlivá vlákna.
+Bohužel používání více vláken je věc úzce spjatá s operačním systémem, pro OS Windows se používají funkce z hlavičkového souboru windows.h. Proto musíme při psaní aplikace, jejíž kód má být přenositelný mezi více operačními systémy použít nějakou knihovnu, která práci s vlákny obstará.
 
-\subsection{Realase vs. Debug}
+
+
+
+\section{Realase vs. Debug}
 \label{releasedebug}
-Další z možností výběru je Debug vs. Release. Překlad se liší v tom, že při debug překladu jsou do kódu vloženy dodatečné informace, které slouží k ladění programu. Program tak posílá vývojovému rozhraní informace o stavu proměnných, dále sděluje jakému řádku ve zdrojovém kódu odpovídá aktuálně vykonávaný příkaz, program je dále kompilován bez optimalizací. Release verze neobsahuje uvedené informace a navíc je optimalizována (kód je přeskupen pro větší efektivitu). Jak je vidět bez informací o proměnných, o pozici aktuálně vykonaného řádku a při přeskupení kódu není možné program ladit. Běh programu je ale díky optimalizacím rychlejší.
+Další z možností výběru je Debug vs. Release. Překlad se liší v tom, že při debug překladu jsou do kódu vloženy dodatečné informace, které slouží k ladění programu. V programu jsou tabulky symbolů pomocí kterých lze zjišťovat stav proměnných. Dále lze zjistit jakému řádku ve zdrojovém kódu odpovídá aktuálně vykonávaný příkaz. Program je kompilován bez optimalizací. Release verze neobsahuje uvedené informace a navíc je optimalizována. Jak je vidět, bez informací o proměnných, o pozici aktuálně vykonaného řádku a při přeskupení kódu není možné program ladit. Běh programu je ale díky optimalizacím rychlejší.
 
-Bohužel především díky optimalizacím se občas stává, že program bez problémů funguje v Debug verzi a zároveň v Release verzi nefunguje. To je způsobeno zpravidla jedním z těchto bodů:
 
-\begin{itemize}
-	\item Program je optimalizován příliš agresivně. Přeskupění řádků kódu je nevhodné a způsobí krach programu.
-	\item Program je kompilován vícejádrově a zároveň je příliš silně optimalizován (podobné jako předchozí bod).
-	\item V debug verzi jsou všechny proměnné inicializovány na NULL (popřípadě nulu, prázdný řetězec). V release verzi proměnné automaticky inicializované nejsou.
-	\item V release verzi dochází ke znovupoužívání paměti a zároveň alokace paměti probíhá odlišně.
-\end{itemize}
+\section{Verze knihovny C++ Runtime}
+V tabulce \ref{table:stdlib} je vidět, kterou verzi standardní knihovny používají zmíněné konfigurace. V každém programu lze použít pouze jednu verzi standardní knihovny. Z toho vyplývá, že lze v programu kombinovat součásti přeložené jako single-thread a multi-thread. Nelze v programu kombinovat součásti přeložené jako static-link a dynamic-link. Nelze kombinovat ani relase a debug verze. Totéž platí i o externích knihovnách. Použijeme-li k překladu naší aplikace zkompilované verze externích knihoven, musejí být zkompilovány ve stejné, nebo kompatibilní konfiguraci jako náš program. Všechny externí knihovny musejí být zkompilovány v navzájem kompatibilních konfiguracích.
 
-Při překladu v Release verzi a nefunkčnosti programu pak můžeme zkusit zmírnit optimalizace, případně kontrolovat inicializace proměnných.
-
-\subsection{Verze knihovny C++ Runtime}
-Jak bylo řečeno výše, při překladu programu musí být všechny dílčí součásti i použité knihovny přeloženy ve stejné z výše popsaných konfigurací, nebo v takové kombinaci, která je vyhovující. Důvodem proč tak musí být je to, že při překladu je k součísti programu, respektive knihovně linkována knihovna C++ Runtime v adekvátní verzi. Pokud část programu přeložíme v konfiguraci např. Multi-thread, static link použije se C++ Runtime v podobě \clist{libcmt.lib}, pokud jinou část programu, nebo externí knihovnu přeložíme jako Multi-Thread, dynamic link, použije se pro C++ Runtime soubor \clist{msvcrt.lib}. Problém je v tom, že se jedná o dva rozdílné soubory, co jsou linkovány, ale v obou jsou definovány tytéž funkce. Překlad pak končí chybou:
-
-\clist{Error LNK2005:  <nazev\_funkce> already defined in MSVCRT.lib(MSVCR100.dll)}
-
-Seznam C++ Runtime knihoven, jež jsou použity 
-
-\hspace{-0.5cm}
+\begin{table}[ht]
+	\caption{Verze standardní knihovny C++ pro jednotlivé konfigurace.\cite{msdn}}
+  \label{table:stdlib}
+	\centering
 \begin{tabular}{| p{3cm} | p{3cm} | p{7.5cm} | }
   \hline                       
   Název C++ Runtime souboru & Odpovídající .dll knihovna & Popis konfigurace\\
@@ -107,9 +90,6 @@ Seznam C++ Runtime knihoven, jež jsou použity
   msvcrtd.lib & msvcr90d.dll & Multi-Thread, Dynamic Link, Debug\\
   \hline
 \end{tabular}
-
-Z předchozího textu a po prostudování uvedené tabulky lze vidět, že je možné spolu kombinovat součásti programu přeložené v konfiguracích Multi-Thread, Static Link a Single-Thread, Static Link. Dále je pak možné kombinovat spolu debug verze zmíněných konfigurací. Ostatní konfigurace ale není možné kombinovat.
-
-
+\end{table}
 
 
