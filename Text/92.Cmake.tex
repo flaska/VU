@@ -1,0 +1,84 @@
+\subsection{Syntaxe Cmake}
+Skripty pro systém Cmake se píší do jediného souboru s názvem \texttt{CMake\-Lists.txt}, na začátku souboru vždy musí být příkaz s informací o verzi v jaké byl skript psán \texttt{cmake\-\_minimum\-\_required\-(VERSION ...)} a dále název projektu \texttt{project\-(...)}.
+
+Dále musíme zadat, kde bude překladač hledat hlavičkové soubory, to znamená zadat cesty ke hlavičkovým souborům, jež jsou součástí projektu i ke hlavičkovým souborům použitých externích knihoven, to uděláme příkazem \texttt{include\-\_directories\-("...")} pro každý adresář s hlavičkovými soubory. Stejně tak musíme zadat cesty ke knihovnám, a to příkazem \texttt{link\-\_directories\-("...")}.
+
+Překlad objektového souboru pak realizujeme příkazem \texttt{add\-\_library\-(library1 library1.cpp library1.h ...)}, kde prvním parametrem je název objektového souboru a další parametry jsou cesty k souborům se zdrojovým kódem. Je dobré již v tento moment provést linkování objektového souboru s externími knihovnami, jež využívá; to provedeme příkazem: \texttt{target\-\_link\-\_libraries\-(library1 lib1 lib2)}, kde prvním parametrem je opět název objektového souboru a dalšími parametry jsou externí knihovny, které se mají připojit.
+
+V případě, že překládáme soubory, jež využívají třídy Qt knihovny a jejich speciální vlastnosti (viz \ref{moc}) a je tudíž třeba nechat Qt knihvnou vygenerovat dodatečný zdrojový kód z hlavičkového souboru, lze to realizovat následujícím příkazem:
+
+\noindent
+{\tt
+add\-\_custom\-\_command\-(OUTPUT moc\-\_class1.cpp COMMAND moc class1.h > \\
+moc\_class1\-.cpp)
+}
+
+Za klíčovým slovem \texttt{OUTPUT} následuje název souboru, jež bude výstupem uvedeného příkazu, to je třeba zadat, aby systém Cmake věděl, kdy má daný příkaz spustit, bude to vždy když výstupní soubor bude na jiné části skriptu potřeba k překladu. Za klíčovým slovem \texttt{COMMAND} pak přirozeně následuje příkaz, který má být k vygenerování kódu proveden. Při překladu takového objektového souboru jehož část kódu je třeba vygenerovat Qt knihovnou, musíme tu část kódu zároveň přidat v parametru příkazu \texttt{add\-\_library}.
+
+Uvedeným postupem popíšeme překlad všech objektových souborů projektu, na konci pak spojíme všechny části do binárního souboru a to příkazy: \texttt{ADD\-\_EXECUTABLE\-(projekt1 main.cpp)} a \texttt{target\-\_link\-\_libraries\-(projekt1 objekt1 objekt2 ...)}.
+
+Překládáme-li program na OS Linux, pak příkazem \texttt{cmake <adresar\-\_projektu>} necháme vygenerovat odpovídající Makefile.
+
+Skript Cmake pro Dicom Presenter vypadá takto:
+
+\definecolor{LightGray}{RGB}{245,245,245}
+\definecolor{LightRed}{RGB}{150,150,150}
+\definecolor{LightGreen}{RGB}{0,0,0}
+\definecolor{LightBlue}{RGB}{100,100,100}
+\lstset{ %
+language=C++,                % choose the language of the code
+basicstyle=\tt\small\color{LightBlue},          % print whole listing small
+keywordstyle=\small\color{black},	% bold black keywords
+identifierstyle=\small\color{LightBlue},           % nothing happens
+commentstyle=\small\color{Rhodamine}, % white comments
+stringstyle=\ttfamily,      % typewriter type for strings
+showstringspaces=false,     % no special string spaces
+numbers=left,                   % where to put the line-numbers
+numberstyle=\tiny\tt,      % the size of the fonts that are used for the line-numbers
+%stepnumber=2,                   % the step between two line-numbers. If it's 1 each line will be numbered
+numbersep=5pt,                  % how far the line-numbers are from the code
+%backgroundcolor=\color{LightGray},  % choose the background color. You must add \usepackage{color}
+showspaces=false,               % show spaces adding particular underscores
+showstringspaces=false,         % underline spaces within strings
+showtabs=false,                 % show tabs within strings adding particular underscores
+frame=single,			% adds a frame around the code
+tabsize=3,	                % sets default tabsize to 2 spaces
+%captionpos=b,                   % sets the caption-position to bottom
+breaklines=true,                % sets automatic line breaking
+breakatwhitespace=false,        % sets if automatic breaks should only happen at whitespace
+%title={Zdrojovy kod},                 % show the filename of files included with \lstinputlisting; also try caption instead of title
+%escapeinside={\%*}{*)}          % if you want to add a comment within your code
+escapechar=!,
+}
+
+\begin{lstlisting}[caption={Skript systému Cmake pro překlad programu Dicom Presenter}, language=make, morekeywords={cmake_minimum_required, project, set, include_directories, link_directories, add_custom_command, OUTPUT, COMMAND, add_library, target_link_libraries, ADD_EXECUTABLE},keywordstyle=\small\color{LightGreen}]
+cmake_minimum_required(VERSION 2.8)
+project (dicom-presenter)
+
+set (Qt_LIBRARY_PATH /usr/share/qt4)
+set (Cg_LIBRARY_PATH /usr)
+...
+
+include_directories (!\redlist{``./src''}!)
+include_directories (!\redlist{``\${Qt\_LIBRARY\_PATH}/include''}!)
+include_directories (!\redlist{``\${Cg\_LIBRARY\_PATH}/include''}!)
+...
+
+link_directories (!\redlist{``\${Qt\_LIBRARY\_PATH}/lib''}!)
+link_directories (!\redlist{``\${Cg\_LIBRARY\_PATH}/lib''}!)
+...
+
+add_custom_command (OUTPUT moc/moc_mainWindow.cpp COMMAND moc src/mainWindow.h > moc/moc_mainWindow.cpp)
+add_library (mainWindow src/mainWindow.cpp moc/moc_mainWindow.cpp src/mainWindow.h)
+target_link_libraries (mainWindow QtGui GLEW)
+
+add_library (glImage src/glObjects/glImage.cpp src/glObjects/glImage.h)
+target_link_libraries (glImage QtOpenGL QtCore)
+
+...
+
+ADD_EXECUTABLE (dp src/main.cpp)
+target_link_libraries (dicom-presenter mainWindow glImage ...)
+\end{lstlisting}
+
+
